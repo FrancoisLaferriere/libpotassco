@@ -47,12 +47,14 @@ else()
 endif()
 
 add_subdirectory(src)
+add_subdirectory(libreify)
 if(LIB_POTASSCO_BUILD_TESTS)
 	enable_testing()
 	add_subdirectory(tests)
 endif()
 if(LIB_POTASSCO_BUILD_APP)
 	add_subdirectory(app)
+    add_subdirectory(app/reify)
 endif()
 
 # optional doc target
