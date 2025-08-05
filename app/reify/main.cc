@@ -26,14 +26,9 @@
 #include <fstream>
 #include <potassco/application.h>
 #include <potassco/program_opts/typed_value.h>
+#include <potassco/error.h>
 
-#define CLINGO_QUOTE_(name) #name
-#define CLINGO_QUOTE(name) CLINGO_QUOTE_(name)
-#ifdef CLINGO_BUILD_REVISION
-#define CLINGO_VERSION_STRING CLINGO_VERSION " (" CLINGO_QUOTE(CLINGO_BUILD_REVISION) ")"
-#else
-#define CLINGO_VERSION_STRING CLINGO_VERSION
-#endif
+using namespace Potassco::ProgramOptions;
 
 struct ReifyOptions {
     bool calculateSCCs = false;
@@ -42,60 +37,51 @@ struct ReifyOptions {
 
 class ReifyApp : public Potassco::Application {
   public:
-    virtual const char *getName() const { return "reify"; }
-
-    virtual const char *getVersion() const { return "1.0.0"; }
-
-  protected:
-    virtual void initOptions(Potassco::ProgramOptions::OptionContext &root) {
-        using namespace Potassco::ProgramOptions;
+    [[nodiscard]] std::string_view getName() const override { return "reify"; }
+    [[nodiscard]] std::string_view getVersion() const override { return "2.0.0"; }
+    [[nodiscard]] std::string_view getPositional(std::string_view) const override { return "input"; }
+    [[nodiscard]] std::string_view getUsage() const override {
+        return "[options] [<file>]\n"
+               "Convert program in <file> or standard input";
+    }
+    void initOptions(OptionContext& root) override {
         OptionGroup reify("Reify Options");
-        reify.addOptions()("sccs,c", flag(opts_.calculateSCCs), "calculate strongly connected components\n")(
-            "steps,s", flag(opts_.reifyStep), "add step numbers to generated facts\n");
-        root.add(reify);
-        OptionGroup basic("Basic Options");
-        basic.addOptions()("file,f,@2", storeTo(input_), "Input files");
-        root.add(basic);
+        reify.addOptions()
+            ("-i@2,input", storeTo(input_, std::string()), "Input file")
+            ("-c, sccs", flag(opts_.calculateSCCs), "calculate strongly connected components")
+            ("-s, steps", flag(opts_.reifyStep), "add step numbers to generated facts")
+            ;
+        root.add(std::move(reify));
     }
 
-    virtual void validateOptions(const Potassco::ProgramOptions::OptionContext &,
-                                 const Potassco::ProgramOptions::ParsedOptions &,
-                                 const Potassco::ProgramOptions::ParsedValues &) {}
-
-    virtual void setup() {}
-
-    static bool parsePositional(std::string const &, std::string &out) {
-        out = "file";
-        return true;
+    void validateOptions(const OptionContext&, const ParsedOptions& parsed) override {}
+    void setup() override {}
+    void onHelp(const std::string& info, Potassco::ProgramOptions::DescriptionLevel) override {
+        std::cout << info << "\n";
     }
-
-    virtual Potassco::ProgramOptions::PosOption getPositional() const { return parsePositional; }
-
-    virtual void printHelp(const Potassco::ProgramOptions::OptionContext &root) {
-        printf("%s version %s\n", getName(), getVersion());
-        printUsage();
-        Potassco::ProgramOptions::FileOut out(stdout);
-        root.description(out);
-        printf("\n");
-        printUsage();
+    void onVersion(const std::string& info) override {
+        std::cout << info << "\nlibpotassco version " << LIB_POTASSCO_VERSION
+                  << "\nCopyright (C) Benjamin Kaufmann\n"
+                     "License: The MIT License <https://opensource.org/licenses/MIT>\n";
     }
-
-    virtual void printVersion() {
-        Application::printVersion();
-        printf("License: The MIT License <https://opensource.org/licenses/MIT>\n");
-        fflush(stdout);
-    }
-
-    virtual void run() {
+    void run() override {
         Reify::Reifier reify(std::cout, opts_.calculateSCCs, opts_.reifyStep);
-        if (input_.empty() || input_ == "-") {
-            reify.parse(std::cin);
-        } else {
-            std::ifstream ifs(input_);
-            reify.parse(ifs);
+        std::ifstream iFile;
+        if (not input_.empty() && input_ != "-") {
+            iFile.open(input_.c_str());
+            POTASSCO_CHECK(iFile.is_open(), std::errc::no_such_file_or_directory, "Could not open input file");
         }
+        std::istream& in = iFile.is_open() ? iFile : std::cin;
+        reify.parse(in);
     }
-
+    bool onUnhandledException(const std::exception_ptr&, std::string_view msg) noexcept override {
+        std::cerr << msg << "\n";
+        return false;
+    }
+    void flush() override {
+        std::cout.flush();
+        std::cerr.flush();
+    }
   private:
     std::string input_;
     ReifyOptions opts_;
