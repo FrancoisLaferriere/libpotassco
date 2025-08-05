@@ -88,6 +88,7 @@ target_compile_options(potassco_default_warnings
     $<$<COMPILE_LANGUAGE:CXX>:${PROJECT_WARNINGS_CXX}>)
 
 add_subdirectory(src)
+add_subdirectory(libreify)
 if(LIB_POTASSCO_BUILD_APP)
     add_subdirectory(app)
 endif()
