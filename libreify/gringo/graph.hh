@@ -22,8 +22,7 @@
 
 // }}}
 
-#ifndef GRINGO_GRAPH_HH
-#define GRINGO_GRAPH_HH
+#pragma once
 
 #include <forward_list>
 #include <vector>
@@ -148,5 +147,3 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
 // }}}
 
 } // namespace Gringo
-
-#endif // GRINGO_GRAPH_HH

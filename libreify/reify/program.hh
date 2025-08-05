@@ -22,8 +22,7 @@
 
 // }}}
 
-#ifndef REIFY_PROGRAM_HH
-#define REIFY_PROGRAM_HH
+#pragma once
 
 #include <cstdint>
 #include <gringo/graph.hh>
@@ -36,16 +35,15 @@ namespace Reify {
 
 using Potassco::Atom_t;
 using Potassco::AtomSpan;
-using Potassco::Head_t;
-using Potassco::Heuristic_t;
+using Potassco::HeadType;
+using Potassco::DomModifier;
 using Potassco::Id_t;
 using Potassco::IdSpan;
 using Potassco::Lit_t;
 using Potassco::LitSpan;
-using Potassco::StringSpan;
-using Potassco::Value_t;
+using Potassco::TruthValue;
 using Potassco::Weight_t;
-using Potassco::WeightLit_t;
+using Potassco::WeightLit;
 using Potassco::WeightLitSpan;
 
 class Reifier : public Potassco::AbstractProgram {
@@ -57,39 +55,42 @@ class Reifier : public Potassco::AbstractProgram {
 
     void initProgram(bool incremental) override;
     void beginStep() override;
-    void rule(Head_t ht, const AtomSpan &head, const LitSpan &body) override;
-    void rule(Head_t ht, const AtomSpan &head, Weight_t bound, const WeightLitSpan &body) override;
-    void minimize(Weight_t prio, const WeightLitSpan &lits) override;
-    void project(const AtomSpan &atoms) override;
-    void output(const StringSpan &str, const LitSpan &condition) override;
-    void external(Atom_t a, Value_t v) override;
-    void assume(const LitSpan &lits) override;
-    void heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan &condition) override;
-    void acycEdge(int s, int t, const LitSpan &condition) override;
+    void rule(HeadType ht, AtomSpan head, LitSpan body) override;
+    void rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan body) override;
+    void minimize(Weight_t prio, WeightLitSpan lits) override;
+    void project(AtomSpan atoms) override;
+    void outputAtom(Atom_t atom, std::string_view name) override;
+    void outputTerm(Id_t termId, std::string_view name) override;
+    void output(Id_t termId, LitSpan condition) override;
+    void external(Atom_t a, TruthValue v) override;
+    void assume(LitSpan lits) override;
+    void heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpan condition) override;
+    void acycEdge(int s, int t, LitSpan condition) override;
 
     void theoryTerm(Id_t termId, int number) override;
-    void theoryTerm(Id_t termId, const StringSpan &name) override;
-    void theoryTerm(Id_t termId, int cId, IdSpan const &args) override;
-    void theoryElement(Id_t elementId, IdSpan const &terms, const LitSpan &cond) override;
-    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements) override;
-    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements, Id_t op, Id_t rhs) override;
+    void theoryTerm(Id_t termId, std::string_view name) override;
+    void theoryTerm(Id_t termId, int cId, IdSpan args) override;
+    void theoryElement(Id_t elementId, IdSpan terms, LitSpan cond) override;
+    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements) override;
+    void theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op, Id_t rhs) override;
 
     void endStep() override;
 
   private:
     using Graph = Gringo::Graph<Atom_t>;
-    template <class L> void calculateSCCs(const AtomSpan &head, const Potassco::Span<L> &body);
+    template <class L> void calculateSCCs(AtomSpan head, std::span<const L> body);
+
     template <typename... T> void printFact(char const *name, T const &...args);
     template <typename... T> void printStepFact(char const *name, T const &...args);
     template <class M, class T> size_t tuple(M &map, char const *name, T const &args);
     template <class M, class T> size_t tuple(M &map, char const *name, std::vector<T> &&args);
     template <class M, class T> size_t ordered_tuple(M &map, char const *name, T const &args);
     template <class M, class T> size_t ordered_tuple(M &map, char const *name, std::vector<T> &&args);
-    size_t theoryTuple(IdSpan const &args);
-    size_t litTuple(LitSpan const &args);
-    size_t atomTuple(AtomSpan const &args);
-    size_t theoryElementTuple(IdSpan const &args);
-    size_t weightLitTuple(WeightLitSpan const &args);
+    size_t theoryTuple(IdSpan args);
+    size_t litTuple(LitSpan args);
+    size_t atomTuple(AtomSpan args);
+    size_t theoryElementTuple(IdSpan args);
+    size_t weightLitTuple(WeightLitSpan args);
     Graph::Node &addNode(Atom_t atom);
 
   private:
@@ -110,5 +111,3 @@ class Reifier : public Potassco::AbstractProgram {
 };
 
 } // namespace Reify
-
-#endif // REIFY_PROGRAM_HH
