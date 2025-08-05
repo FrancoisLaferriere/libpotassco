@@ -10,7 +10,7 @@ namespace Test {
 bool read(std::stringstream &in, std::stringstream &out, bool scc = false, bool step = false) {
     Reifier prg(out, scc, step);
     Potassco::AspifTextInput parser(&prg);
-    return Potassco::readProgram(in, parser, 0) == 0;
+    return Potassco::readProgram(in, parser) == 0;
 }
 
 TEST_CASE("program", "[program]") {
@@ -94,7 +94,7 @@ TEST_CASE("program", "[program]") {
     SECTION("output") {
         input << "#output a:b,c.";
         REQUIRE(read(input, output));
-        REQUIRE(output.str() == "literal_tuple(0).\nliteral_tuple(0,2).\nliteral_tuple(0,3).\noutput(a,0).\n");
+        REQUIRE(output.str() == "outputTerm(a,0).\nliteral_tuple(0).\nliteral_tuple(0,2).\nliteral_tuple(0,3).\noutput(0,0).\n");
     }
     SECTION("external") {
         input << "#external a.";
