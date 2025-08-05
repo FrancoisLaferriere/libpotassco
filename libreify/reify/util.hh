@@ -22,8 +22,7 @@
 
 // }}}
 
-#ifndef UTIL_PROGRAM_HH
-#define UTIL_PROGRAM_HH
+#pragma once
 
 #include <functional>
 #include <iostream>
@@ -34,8 +33,8 @@
 
 namespace Reify {
 
-inline std::ostream &operator<<(std::ostream &out, Potassco::StringSpan str) {
-    out.write(str.first, str.size);
+inline std::ostream &operator<<(std::ostream &out, std::string_view str) {
+    out.write(str.data(), str.size());
     return out;
 }
 
@@ -91,8 +90,6 @@ template <typename T> struct Hash<std::vector<T>> {
     }
 };
 
-template <class T> std::vector<T> toVec(Potassco::Span<T> span) { return {span.first, span.first + span.size}; }
+template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()};}
 
 } // namespace Reify
-
-#endif // UTIL_PROGRAM_HH

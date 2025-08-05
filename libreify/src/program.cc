@@ -22,8 +22,8 @@
 
 // }}}
 
-#include "reify/program.hh"
-#include "gringo/symbol.hh"
+#include <reify/program.hh>
+#include <gringo/symbol.hh>
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -83,24 +83,24 @@ template <class M, class T> size_t Reifier::ordered_tuple(M &map, char const *na
     return ret.first->second;
 }
 
-size_t Reifier::theoryTuple(IdSpan const &args) { return ordered_tuple(stepData_.theoryTuples, "theory_tuple", args); }
+size_t Reifier::theoryTuple(IdSpan args) { return ordered_tuple(stepData_.theoryTuples, "theory_tuple", args); }
 
-size_t Reifier::theoryElementTuple(IdSpan const &args) {
+size_t Reifier::theoryElementTuple(IdSpan args) {
     return tuple(stepData_.theoryElementTuples, "theory_element_tuple", args);
 }
 
-size_t Reifier::litTuple(LitSpan const &args) { return tuple(stepData_.litTuples, "literal_tuple", args); }
+size_t Reifier::litTuple(LitSpan args) { return tuple(stepData_.litTuples, "literal_tuple", args); }
 
-size_t Reifier::weightLitTuple(WeightLitSpan const &args) {
+size_t Reifier::weightLitTuple(WeightLitSpan args) {
     WLVec lits;
-    lits.reserve(args.size);
+    lits.reserve(args.size());
     for (auto &x : args) {
         lits.emplace_back(x.lit, x.weight);
     }
     return tuple(stepData_.weightLitTuples, "weighted_literal_tuple", std::move(lits));
 }
 
-size_t Reifier::atomTuple(AtomSpan const &args) { return tuple(stepData_.atomTuples, "atom_tuple", args); }
+size_t Reifier::atomTuple(AtomSpan args) { return tuple(stepData_.atomTuples, "atom_tuple", args); }
 
 Reifier::Graph::Node &Reifier::addNode(Atom_t atom) {
     auto &node = stepData_.nodes_[atom];
@@ -118,8 +118,8 @@ void Reifier::initProgram(bool incremental) {
 
 void Reifier::beginStep() {}
 
-void Reifier::rule(Head_t ht, const AtomSpan &head, const LitSpan &body) {
-    char const *h = ht == Potassco::Head_t::Disjunctive ? "disjunction" : "choice";
+void Reifier::rule(HeadType ht, AtomSpan head, LitSpan body) {
+    char const *h = ht == Potassco::HeadType::disjunctive ? "disjunction" : "choice";
     std::ostringstream hss, bss;
     hss << h << "(" << atomTuple(head) << ")";
     bss << "normal(" << litTuple(body) << ")";
@@ -129,8 +129,8 @@ void Reifier::rule(Head_t ht, const AtomSpan &head, const LitSpan &body) {
     }
 }
 
-void Reifier::rule(Head_t ht, const AtomSpan &head, Weight_t bound, const WeightLitSpan &body) {
-    char const *h = ht == Potassco::Head_t::Disjunctive ? "disjunction" : "choice";
+void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan body) {
+    char const *h = ht == Potassco::HeadType::disjunctive ? "disjunction" : "choice";
     std::ostringstream hss, bss;
     hss << h << "(" << atomTuple(head) << ")";
     bss << "sum(" << weightLitTuple(body) << "," << bound << ")";
@@ -140,7 +140,7 @@ void Reifier::rule(Head_t ht, const AtomSpan &head, Weight_t bound, const Weight
     }
 }
 
-template <class L> void Reifier::calculateSCCs(const AtomSpan &head, const Potassco::Span<L> &body) {
+template <class L> void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
     for (auto &atom : head) {
         Graph::Node &u = addNode(atom);
         for (auto &elem : body) {
@@ -152,62 +152,44 @@ template <class L> void Reifier::calculateSCCs(const AtomSpan &head, const Potas
     }
 }
 
-void Reifier::minimize(Weight_t prio, const WeightLitSpan &lits) {
+void Reifier::minimize(Weight_t prio, WeightLitSpan lits) {
     printStepFact("minimize", prio, weightLitTuple(lits));
 }
 
-void Reifier::project(const AtomSpan &atoms) {
+void Reifier::project(AtomSpan atoms) {
     for (auto &x : atoms) {
         printStepFact("project", x);
     }
 }
 
-namespace {
-
-size_t csp_offset(const StringSpan &str) {
-    auto pos = str.size;
-    for (; pos > 0 && str[pos - 1] >= '0' && str[pos - 1] <= '9'; --pos) {
-    }
-    if (pos == str.size) {
-        return str.size;
-    }
-    if (pos > 1 && str[pos - 1] == '-') {
-        --pos;
-    }
-    if (pos > 1 && str[pos - 1] == '=') {
-        return pos - 1;
-    }
-    return str.size;
+void Reifier::outputAtom(Atom_t atom, std::string_view name) {
+    printStepFact("outputAtom", name, atom);
 }
 
-} // namespace
-
-void Reifier::output(const StringSpan &str, const LitSpan &condition) {
-    auto pos = csp_offset(str);
-    if (pos == str.size) {
-        printStepFact("output", str, litTuple(condition));
-    } else {
-        printStepFact("output_csp", StringSpan{str.first, pos}, StringSpan{str.first + pos + 1, str.size - pos - 1},
-                      litTuple(condition));
-    }
+void Reifier::outputTerm(Id_t termId, std::string_view name) {
+    printStepFact("outputTerm", name, termId);
 }
 
-void Reifier::external(Atom_t a, Value_t v) {
+void Reifier::output(Id_t termId, LitSpan condition) {
+    printStepFact("output", termId, litTuple(condition));
+}
+
+void Reifier::external(Atom_t a, TruthValue v) {
     char const *type = "";
     switch (v) {
-        case Value_t::Free: {
+        case TruthValue::free: {
             type = "free";
             break;
         }
-        case Value_t::False: {
+        case TruthValue::false_: {
             type = "false";
             break;
         }
-        case Value_t::True: {
+        case TruthValue::true_: {
             type = "true";
             break;
         }
-        case Value_t::Release: {
+        case TruthValue::release: {
             type = "release";
             break;
         }
@@ -215,36 +197,36 @@ void Reifier::external(Atom_t a, Value_t v) {
     printStepFact("external", a, type);
 }
 
-void Reifier::assume(const LitSpan &lits) {
+void Reifier::assume(LitSpan lits) {
     for (auto &x : lits) {
         printStepFact("assume", x);
     }
 }
 
-void Reifier::heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const LitSpan &condition) {
+void Reifier::heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpan condition) {
     char const *type = "";
     switch (t) {
-        case Heuristic_t::Level: {
+        case DomModifier::level: {
             type = "level";
             break;
         }
-        case Heuristic_t::Sign: {
+        case DomModifier::sign: {
             type = "sign";
             break;
         }
-        case Heuristic_t::Factor: {
+        case DomModifier::factor: {
             type = "factor";
             break;
         }
-        case Heuristic_t::Init: {
+        case DomModifier::init: {
             type = "init";
             break;
         }
-        case Heuristic_t::True: {
+        case DomModifier::true_: {
             type = "true";
             break;
         }
-        case Heuristic_t::False: {
+        case DomModifier::false_: {
             type = "false";
             break;
         }
@@ -252,18 +234,18 @@ void Reifier::heuristic(Atom_t a, Heuristic_t t, int bias, unsigned prio, const 
     printStepFact("heuristic", a, type, bias, prio, litTuple(condition));
 }
 
-void Reifier::acycEdge(int s, int t, const LitSpan &condition) { printStepFact("edge", s, t, litTuple(condition)); }
+void Reifier::acycEdge(int s, int t, LitSpan condition) { printStepFact("edge", s, t, litTuple(condition)); }
 
 void Reifier::theoryTerm(Id_t termId, int number) { printStepFact("theory_number", termId, number); }
 
-void Reifier::theoryTerm(Id_t termId, const StringSpan &name) {
+void Reifier::theoryTerm(Id_t termId, std::string_view name) {
     auto s = Gringo::quote(name);
     s.insert(s.begin(), '"');
     s.push_back('"');
     printStepFact("theory_string", termId, s);
 }
 
-void Reifier::theoryTerm(Id_t termId, int cId, IdSpan const &args) {
+void Reifier::theoryTerm(Id_t termId, int cId, IdSpan args) {
     if (cId >= 0) {
         printStepFact("theory_function", termId, cId, theoryTuple(args));
     } else {
@@ -286,17 +268,17 @@ void Reifier::theoryTerm(Id_t termId, int cId, IdSpan const &args) {
     }
 }
 
-void Reifier::theoryElement(Id_t elementId, IdSpan const &terms, const LitSpan &cond) {
+void Reifier::theoryElement(Id_t elementId, IdSpan terms, LitSpan cond) {
     auto tt = theoryTuple(terms);
     auto lt = litTuple(cond);
     printStepFact("theory_element", elementId, tt, lt);
 }
 
-void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements) {
+void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements) {
     printStepFact("theory_atom", atomOrZero, termId, theoryElementTuple(elements));
 }
 
-void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan const &elements, Id_t op, Id_t rhs) {
+void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op, Id_t rhs) {
     printStepFact("theory_atom", atomOrZero, termId, theoryElementTuple(elements), op, rhs);
 }
 
