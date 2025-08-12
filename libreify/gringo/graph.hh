@@ -34,18 +34,18 @@ namespace Gringo {
 template <class T> class Graph {
   public:
     struct Node;
-    using NodeVec = std::vector<Node *>;
+    using NodeVec = std::vector<Node*>;
     using SCCVec = std::vector<NodeVec>;
     struct Node {
         friend class Graph;
-        template <class... U> Node(unsigned phase, U &&...data);
-        Node(Node const &other) = delete;
-        Node(Node &&other) noexcept = default;
-        Node &operator=(Node const &other) = delete;
-        Node &operator=(Node &&other) noexcept = default;
+        template <class... U> Node(unsigned phase, U&& ...data);
+        Node(const Node& other) = delete;
+        Node(Node&& other) noexcept = default;
+        Node& operator=(const Node& other) = delete;
+        Node& operator=(Node&& other) noexcept = default;
         ~Node() noexcept = default;
 
-        void insertEdge(Node &n);
+        void insertEdge(Node& n);
         typename NodeVec::const_iterator begin() const;
         typename NodeVec::const_iterator end() const;
 
@@ -59,14 +59,14 @@ template <class T> class Graph {
     };
 
     Graph() = default;
-    Graph(Graph &&other) noexcept = default;
-    Graph(Graph const &other) = delete;
-    Graph &operator=(Graph &&other) noexcept = default;
-    Graph &operator=(Graph const &) = delete;
+    Graph(Graph&& other) noexcept = default;
+    Graph(const Graph& other) = delete;
+    Graph& operator=(Graph&& other) noexcept = default;
+    Graph& operator=(const Graph&) = delete;
     ~Graph() = default;
 
     SCCVec tarjan();
-    template <class... U> Node &insertNode(U &&...x);
+    template <class... U> Node& insertNode(U&& ...x);
 
   private:
     unsigned nphase() { return phase_ == 0 ? 1 : 0; }
@@ -82,9 +82,9 @@ template <class T> class Graph {
 
 template <class T>
 template <class... U>
-Graph<T>::Node::Node(unsigned phase, U &&...data) : data(std::forward<U>(data)...), visited_(phase) {}
+Graph<T>::Node::Node(unsigned phase, U&& ...data) : data(std::forward<U>(data)...), visited_(phase) {}
 
-template <class T> void Graph<T>::Node::insertEdge(Node &n) { edges_.emplace_back(&n); }
+template <class T> void Graph<T>::Node::insertEdge(Node& n) { edges_.emplace_back(&n); }
 
 template <class T> typename Graph<T>::NodeVec::const_iterator Graph<T>::Node::begin() const { return edges_.begin(); }
 
@@ -93,7 +93,7 @@ template <class T> typename Graph<T>::NodeVec::const_iterator Graph<T>::Node::en
 // }}}
 // {{{ definition of Graph<T>
 
-template <class T> template <class... U> typename Graph<T>::Node &Graph<T>::insertNode(U &&...x) {
+template <class T> template <class... U> typename Graph<T>::Node& Graph<T>::insertNode(U&& ...x) {
     nodes_.emplace_front(nphase(), std::forward<U>(x)...);
     return nodes_.front();
 }
@@ -102,10 +102,10 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
     SCCVec sccs;
     NodeVec stack;
     NodeVec trail;
-    for (auto &x : nodes_) {
+    for (auto& x : nodes_) {
         if (x.visited_ == nphase()) {
             unsigned index = 1;
-            auto push = [&stack, &trail, &index](Node &x) {
+            auto push = [&stack, &trail, &index](Node& x) {
                 x.visited_ = ++index;
                 x.finished_ = x.edges_.begin();
                 stack.emplace_back(&x);
@@ -113,7 +113,7 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
             };
             push(x);
             while (!stack.empty()) {
-                auto &y = stack.back();
+                auto& y = stack.back();
                 auto end = y->edges_.end();
                 for (; y->finished_ != end && (*y->finished_)->visited_ != nphase(); ++y->finished_) {
                 }
@@ -122,7 +122,7 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
                 } else {
                     stack.pop_back();
                     bool root = true;
-                    for (auto &z : y->edges_) {
+                    for (auto& z : y->edges_) {
                         if (z->visited_ != phase_ && z->visited_ < y->visited_) {
                             root = false;
                             y->visited_ = z->visited_;
