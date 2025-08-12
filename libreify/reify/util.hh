@@ -31,18 +31,18 @@
 
 namespace Reify {
 
-template <typename T> void printValue(std::ostream &out, T const &value) { out << value; }
+template <typename T> void printValue(std::ostream& out, const T& value) { out << value; }
 
-template <typename T, typename U> void printValue(std::ostream &out, std::pair<T, U> const &value) {
+template <typename T, typename U> void printValue(std::ostream& out, const std::pair<T, U>& value) {
     printValue(out, value.first);
     out << ",";
     printValue(out, value.second);
 }
 
-template <typename T> void printComma(std::ostream &out, T const &t) { printValue(out, t); }
+template <typename T> void printComma(std::ostream &out, const T &t) { printValue(out, t); }
 
 template <typename T, typename U, typename... V>
-void printComma(std::ostream &out, T const &t, U const &u, V const &...v) {
+void printComma(std::ostream &out, const T &t, const U &u, const V &...v) {
     printValue(out, t);
     out << ",";
     printComma(out, u, v...);
@@ -51,7 +51,7 @@ void printComma(std::ostream &out, T const &t, U const &u, V const &...v) {
 template <typename T> struct Hash : std::hash<T> {};
 
 template <typename T, typename U> struct Hash<std::pair<T, U>> {
-    size_t operator()(std::pair<T, U> const &p) const noexcept {
+    size_t operator()(const std::pair<T, U>& p) const noexcept {
         size_t hash = std::hash<T>()(p.first);
         hash ^= Hash<U>()(p.second) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         return hash;
@@ -59,16 +59,16 @@ template <typename T, typename U> struct Hash<std::pair<T, U>> {
 };
 
 template <typename T> struct Hash<std::vector<T>> {
-    size_t operator()(std::vector<T> const &vec) const noexcept {
+    size_t operator()(const std::vector<T>& vec) const noexcept {
         size_t hash = vec.size();
-        for (auto &x : vec) {
+        for (auto& x : vec) {
             hash ^= Hash<typename std::vector<T>::value_type>()(x) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
         }
         return hash;
     }
 };
 
-template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()};}
+template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()}; }
 
 inline std::string quote(std::string_view str) {
     std::string res;

@@ -28,6 +28,7 @@
 #include <gringo/graph.hh>
 #include <potassco/aspif.h>
 #include <reify/util.hh>
+
 #include <unordered_map>
 #include <vector>
 
@@ -48,10 +49,10 @@ using Potassco::WeightLitSpan;
 
 class Reifier : public Potassco::AbstractProgram {
   public:
-    Reifier(std::ostream &out, bool calculateSCCs, bool reifyStep);
+    Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep);
     ~Reifier() noexcept override;
 
-    void parse(std::istream &in);
+    void parse(std::istream& in);
 
     void initProgram(bool incremental) override;
     void beginStep() override;
@@ -80,18 +81,18 @@ class Reifier : public Potassco::AbstractProgram {
     using Graph = Gringo::Graph<Atom_t>;
     template <class L> void calculateSCCs(AtomSpan head, std::span<const L> body);
 
-    template <typename... T> void printFact(char const *name, T const &...args);
-    template <typename... T> void printStepFact(char const *name, T const &...args);
-    template <class M, class T> size_t tuple(M &map, char const *name, T const &args);
-    template <class M, class T> size_t tuple(M &map, char const *name, std::vector<T> &&args);
-    template <class M, class T> size_t ordered_tuple(M &map, char const *name, T const &args);
-    template <class M, class T> size_t ordered_tuple(M &map, char const *name, std::vector<T> &&args);
+    template <typename... T> void printFact(const char* name, const T& ...args);
+    template <typename... T> void printStepFact(const char* name, const T& ...args);
+    template <class M, class T> size_t tuple(M& map, const char* name, const T& args);
+    template <class M, class T> size_t tuple(M& map, const char* name, std::vector<T>&& args);
+    template <class M, class T> size_t ordered_tuple(M& map, const char* name, const T& args);
+    template <class M, class T> size_t ordered_tuple(M& map, const char* name, std::vector<T>&& args);
     size_t theoryTuple(IdSpan args);
     size_t litTuple(LitSpan args);
     size_t atomTuple(AtomSpan args);
     size_t theoryElementTuple(IdSpan args);
     size_t weightLitTuple(WeightLitSpan args);
-    Graph::Node &addNode(Atom_t atom);
+    Graph::Node& addNode(Atom_t atom);
 
   private:
     using WLVec = std::vector<std::pair<Lit_t, Weight_t>>;
@@ -102,9 +103,9 @@ class Reifier : public Potassco::AbstractProgram {
         std::unordered_map<std::vector<Atom_t>, size_t, Hash<std::vector<Atom_t>>> atomTuples;
         std::unordered_map<WLVec, size_t, Hash<WLVec>> weightLitTuples;
         Graph graph_;
-        std::unordered_map<Atom_t, Graph::Node *> nodes_;
+        std::unordered_map<Atom_t, Graph::Node*> nodes_;
     } stepData_;
-    std::ostream &out_;
+    std::ostream& out_;
     size_t step_ = 0;
     bool calculateSCCs_;
     bool reifyStep_;
