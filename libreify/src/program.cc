@@ -23,7 +23,7 @@
 // }}}
 
 #include <reify/program.hh>
-#include <gringo/symbol.hh>
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -239,7 +239,7 @@ void Reifier::acycEdge(int s, int t, LitSpan condition) { printStepFact("edge", 
 void Reifier::theoryTerm(Id_t termId, int number) { printStepFact("theory_number", termId, number); }
 
 void Reifier::theoryTerm(Id_t termId, std::string_view name) {
-    auto s = Gringo::quote(name);
+    auto s = quote(name);
     s.insert(s.begin(), '"');
     s.push_back('"');
     printStepFact("theory_string", termId, s);
