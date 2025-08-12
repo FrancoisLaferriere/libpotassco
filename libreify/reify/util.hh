@@ -39,13 +39,9 @@ template <typename T, typename U> void printValue(std::ostream& out, const std::
     printValue(out, value.second);
 }
 
-template <typename T> void printComma(std::ostream &out, const T &t) { printValue(out, t); }
-
-template <typename T, typename U, typename... V>
-void printComma(std::ostream &out, const T &t, const U &u, const V &...v) {
+template <typename T, typename... V> void printComma(std::ostream& out, const T& t, const V& ...v) {
     printValue(out, t);
-    out << ",";
-    printComma(out, u, v...);
+    ((out << "," , printValue(out, v)), ...);
 }
 
 template <typename T> struct Hash : std::hash<T> {};
