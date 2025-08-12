@@ -24,34 +24,12 @@
 
 #pragma once
 
-#include <functional>
-#include <iostream>
-#include <memory>
 #include <potassco/basic_types.h>
-#include <utility>
+
+#include <iostream>
 #include <vector>
 
 namespace Reify {
-
-inline std::ostream &operator<<(std::ostream &out, std::string_view str) {
-    out.write(str.data(), str.size());
-    return out;
-}
-
-template <typename Lambda> class ScopeGuard {
-  public:
-    ScopeGuard(Lambda &&f) : f_(std::forward<Lambda>(f)) {}
-    ~ScopeGuard() { f_(); }
-
-  private:
-    Lambda f_;
-};
-
-template <typename Lambda> ScopeGuard<Lambda> makeScopeGuard(Lambda &&f) { return {std::forward<Lambda>(f)}; }
-
-template <typename T, typename... Args> std::unique_ptr<T> gringo_make_unique(Args &&...args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
 template <typename T> void printValue(std::ostream &out, T const &value) { out << value; }
 
@@ -91,5 +69,33 @@ template <typename T> struct Hash<std::vector<T>> {
 };
 
 template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()};}
+
+inline std::string quote(std::string_view str) {
+    std::string res;
+    for (auto c : str) {
+        switch (c) {
+            case '\n': {
+                res.push_back('\\');
+                res.push_back('n');
+                break;
+            }
+            case '\\': {
+                res.push_back('\\');
+                res.push_back('\\');
+                break;
+            }
+            case '"': {
+                res.push_back('\\');
+                res.push_back('"');
+                break;
+            }
+            default: {
+                res.push_back(c);
+                break;
+            }
+        }
+    }
+    return res;
+}
 
 } // namespace Reify
