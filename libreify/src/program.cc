@@ -23,6 +23,7 @@
 // }}}
 
 #include <reify/program.hh>
+#include <potassco/enum.h>
 
 #include <algorithm>
 #include <cassert>
@@ -175,26 +176,7 @@ void Reifier::output(Id_t termId, LitSpan condition) {
 }
 
 void Reifier::external(Atom_t a, TruthValue v) {
-    const char* type = "";
-    switch (v) {
-        case TruthValue::free: {
-            type = "free";
-            break;
-        }
-        case TruthValue::false_: {
-            type = "false";
-            break;
-        }
-        case TruthValue::true_: {
-            type = "true";
-            break;
-        }
-        case TruthValue::release: {
-            type = "release";
-            break;
-        }
-    }
-    printStepFact("external", a, type);
+    printStepFact("external", a, Potassco::enum_name(v));
 }
 
 void Reifier::assume(LitSpan lits) {
@@ -204,34 +186,7 @@ void Reifier::assume(LitSpan lits) {
 }
 
 void Reifier::heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpan condition) {
-    const char* type = "";
-    switch (t) {
-        case DomModifier::level: {
-            type = "level";
-            break;
-        }
-        case DomModifier::sign: {
-            type = "sign";
-            break;
-        }
-        case DomModifier::factor: {
-            type = "factor";
-            break;
-        }
-        case DomModifier::init: {
-            type = "init";
-            break;
-        }
-        case DomModifier::true_: {
-            type = "true";
-            break;
-        }
-        case DomModifier::false_: {
-            type = "false";
-            break;
-        }
-    }
-    printStepFact("heuristic", a, type, bias, prio, litTuple(condition));
+    printStepFact("heuristic", a, Potassco::enum_name(t), bias, prio, litTuple(condition));
 }
 
 void Reifier::acycEdge(int s, int t, LitSpan condition) { printStepFact("edge", s, t, litTuple(condition)); }
