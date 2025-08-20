@@ -68,6 +68,7 @@ template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.
 
 inline std::string quote(std::string_view str) {
     std::string res;
+    res.push_back('"');
     for (auto c : str) {
         switch (c) {
             case '\n': {
@@ -91,6 +92,7 @@ inline std::string quote(std::string_view str) {
             }
         }
     }
+    res.push_back('"');
     return res;
 }
 
