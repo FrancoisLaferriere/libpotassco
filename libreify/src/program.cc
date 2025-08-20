@@ -60,7 +60,7 @@ template <class M, class T> size_t Reifier::tuple(M& map, const char* name, std:
     auto ret = map.emplace(std::move(args), map.size());
     if (ret.second) {
         printStepFact(name, ret.first->second);
-        for (auto& x : ret.first->first) {
+        for (const auto& x : ret.first->first) {
             printStepFact(name, ret.first->second, x);
         }
     }
@@ -76,7 +76,7 @@ template <class M, class T> size_t Reifier::ordered_tuple(M& map, const char* na
     if (ret.second) {
         printStepFact(name, ret.first->second);
         int arg = 0;
-        for (auto& x : ret.first->first) {
+        for (const auto& x : ret.first->first) {
             printStepFact(name, ret.first->second, arg, x);
             ++arg;
         }
@@ -95,7 +95,7 @@ size_t Reifier::litTuple(LitSpan args) { return tuple(stepData_.litTuples, "lite
 size_t Reifier::weightLitTuple(WeightLitSpan args) {
     WLVec lits;
     lits.reserve(args.size());
-    for (auto& x : args) {
+    for (const auto& x : args) {
         lits.emplace_back(x.lit, x.weight);
     }
     return tuple(stepData_.weightLitTuples, "weighted_literal_tuple", std::move(lits));
@@ -142,9 +142,9 @@ void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan bod
 }
 
 template <class L> void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
-    for (auto& atom : head) {
+    for (const auto& atom : head) {
         Graph::Node& u = addNode(atom);
-        for (auto& elem : body) {
+        for (const auto& elem : body) {
             if (Potassco::lit(elem) > 0) {
                 Graph::Node& v = addNode(Potassco::lit(elem));
                 u.insertEdge(v);
@@ -158,7 +158,7 @@ void Reifier::minimize(Weight_t prio, WeightLitSpan lits) {
 }
 
 void Reifier::project(AtomSpan atoms) {
-    for (auto& x : atoms) {
+    for (const auto& x : atoms) {
         printStepFact("project", x);
     }
 }
@@ -180,7 +180,7 @@ void Reifier::external(Atom_t a, TruthValue v) {
 }
 
 void Reifier::assume(LitSpan lits) {
-    for (auto& x : lits) {
+    for (const auto& x : lits) {
         printStepFact("assume", x);
     }
 }
@@ -239,9 +239,9 @@ void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op,
 
 void Reifier::endStep() {
     size_t i = 0;
-    for (auto& scc : stepData_.graph_.tarjan()) {
+    for (const auto& scc : stepData_.graph_.tarjan()) {
         if (scc.size() > 1) {
-            for (auto& node : scc) {
+            for (const auto* node : scc) {
                 printStepFact("scc", i, node->data);
             }
         }
