@@ -39,12 +39,15 @@ Reifier::Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep)
 
 Reifier::~Reifier() noexcept = default;
 
-template <typename... T> void Reifier::printFact(const char* name, const T& ...args) {
+template <typename... T>
+void Reifier::printFact(const char* name, const T&... args) {
     out_ << name << "(";
     printComma(out_, args...);
     out_ << ").\n";
 }
-template <typename... T> void Reifier::printStepFact(const char* name, const T& ...args) {
+
+template <typename... T>
+void Reifier::printStepFact(const char* name, const T&... args) {
     if (reifyStep_) {
         printFact(name, args..., step_);
     } else {
@@ -52,11 +55,13 @@ template <typename... T> void Reifier::printStepFact(const char* name, const T& 
     }
 }
 
-template <class M, class T> size_t Reifier::tuple(M& map, const char* name, const T& args) {
+template <typename M, typename T>
+auto Reifier::tuple(M& map, const char* name, const T& args) -> size_t {
     return tuple(map, name, toVec(args));
 }
 
-template <class M, class T> size_t Reifier::tuple(M& map, const char* name, std::vector<T>&& args) {
+template <typename M, typename T>
+auto Reifier::tuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
     auto ret = map.emplace(std::move(args), map.size());
     if (ret.second) {
         printStepFact(name, ret.first->second);
@@ -67,11 +72,13 @@ template <class M, class T> size_t Reifier::tuple(M& map, const char* name, std:
     return ret.first->second;
 }
 
-template <class M, class T> size_t Reifier::ordered_tuple(M& map, const char* name, const T& args) {
-    return ordered_tuple(map, name, toVec(args));
+template <typename M, typename T>
+auto Reifier::orderedTuple(M& map, const char* name, const T& args) -> size_t {
+    return orderedTuple(map, name, toVec(args));
 }
 
-template <class M, class T> size_t Reifier::ordered_tuple(M& map, const char* name, std::vector<T>&& args) {
+template <typename M, typename T>
+auto Reifier::orderedTuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
     auto ret = map.emplace(std::move(args), map.size());
     if (ret.second) {
         printStepFact(name, ret.first->second);
@@ -84,15 +91,19 @@ template <class M, class T> size_t Reifier::ordered_tuple(M& map, const char* na
     return ret.first->second;
 }
 
-size_t Reifier::theoryTuple(IdSpan args) { return ordered_tuple(stepData_.theoryTuples, "theory_tuple", args); }
+auto Reifier::theoryTuple(IdSpan args) -> size_t {
+    return orderedTuple(stepData_.theoryTuples, "theory_tuple", args);
+}
 
-size_t Reifier::theoryElementTuple(IdSpan args) {
+auto Reifier::theoryElementTuple(IdSpan args) -> size_t {
     return tuple(stepData_.theoryElementTuples, "theory_element_tuple", args);
 }
 
-size_t Reifier::litTuple(LitSpan args) { return tuple(stepData_.litTuples, "literal_tuple", args); }
+auto Reifier::litTuple(LitSpan args) -> size_t {
+    return tuple(stepData_.litTuples, "literal_tuple", args);
+}
 
-size_t Reifier::weightLitTuple(WeightLitSpan args) {
+auto Reifier::weightLitTuple(WeightLitSpan args) -> size_t {
     WLVec lits;
     lits.reserve(args.size());
     for (const auto& x : args) {
@@ -101,12 +112,14 @@ size_t Reifier::weightLitTuple(WeightLitSpan args) {
     return tuple(stepData_.weightLitTuples, "weighted_literal_tuple", std::move(lits));
 }
 
-size_t Reifier::atomTuple(AtomSpan args) { return tuple(stepData_.atomTuples, "atom_tuple", args); }
+auto Reifier::atomTuple(AtomSpan args) -> size_t {
+    return tuple(stepData_.atomTuples, "atom_tuple", args);
+}
 
-Reifier::Graph::Node& Reifier::addNode(Atom_t atom) {
+auto Reifier::addNode(Atom_t atom) -> Graph::Node& {
     auto& node = stepData_.nodes_[atom];
     if (!node) {
-        node =& stepData_.graph_.insertNode(atom);
+        node = &stepData_.graph_.insertNode(atom);
     }
     return *node;
 }
@@ -141,7 +154,8 @@ void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan bod
     }
 }
 
-template <class L> void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
+template <typename L>
+void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
     for (const auto& atom : head) {
         Graph::Node& u = addNode(atom);
         for (const auto& elem : body) {
@@ -189,9 +203,13 @@ void Reifier::heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpa
     printStepFact("heuristic", a, Potassco::enum_name(t), bias, prio, litTuple(condition));
 }
 
-void Reifier::acycEdge(int s, int t, LitSpan condition) { printStepFact("edge", s, t, litTuple(condition)); }
+void Reifier::acycEdge(int s, int t, LitSpan condition) {
+    printStepFact("edge", s, t, litTuple(condition));
+}
 
-void Reifier::theoryTerm(Id_t termId, int number) { printStepFact("theory_number", termId, number); }
+void Reifier::theoryTerm(Id_t termId, int number) {
+    printStepFact("theory_number", termId, number);
+}
 
 void Reifier::theoryTerm(Id_t termId, std::string_view name) {
     printStepFact("theory_string", termId, quote(name));
@@ -203,18 +221,9 @@ void Reifier::theoryTerm(Id_t termId, int cId, IdSpan args) {
     } else {
         const char* type = "";
         switch (cId) {
-            case -1: {
-                type = "tuple";
-                break;
-            }
-            case -2: {
-                type = "set";
-                break;
-            }
-            case -3: {
-                type = "list";
-                break;
-            }
+            case -1: type = "tuple"; break;
+            case -2: type = "set";   break;
+            case -3: type = "list";  break;
         }
         printStepFact("theory_sequence", termId, type, theoryTuple(args));
     }

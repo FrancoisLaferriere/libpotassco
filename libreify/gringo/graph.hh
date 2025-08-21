@@ -22,6 +22,7 @@
 
 // }}}
 
+
 #pragma once
 
 #include <forward_list>
@@ -31,14 +32,18 @@ namespace Gringo {
 
 // {{{ declaration of Graph<T>
 
-template <class T> class Graph {
-  public:
+template <class T>
+class Graph {
+public:
     struct Node;
     using NodeVec = std::vector<Node*>;
-    using SCCVec = std::vector<NodeVec>;
+    using SCCVec  = std::vector<NodeVec>;
+
     struct Node {
         friend class Graph;
-        template <class... U> Node(unsigned phase, U&& ...data);
+        template <class... U>
+        Node(unsigned phase, U&& ...data);
+
         Node(const Node& other) = delete;
         Node(Node&& other) noexcept = default;
         Node& operator=(const Node& other) = delete;
@@ -46,13 +51,13 @@ template <class T> class Graph {
         ~Node() noexcept = default;
 
         void insertEdge(Node& n);
-        typename NodeVec::const_iterator begin() const;
-        typename NodeVec::const_iterator end() const;
+        auto begin() const -> typename NodeVec::const_iterator;
+        auto end()   const -> typename NodeVec::const_iterator;
 
         // NOLINTNEXTLINE
         T data;
 
-      private:
+    private:
         NodeVec edges_;
         unsigned visited_;
         typename NodeVec::iterator finished_;
@@ -65,10 +70,12 @@ template <class T> class Graph {
     Graph& operator=(const Graph&) = delete;
     ~Graph() = default;
 
-    SCCVec tarjan();
-    template <class... U> Node& insertNode(U&& ...x);
+    auto tarjan() -> SCCVec;
 
-  private:
+    template <class... U>
+    auto insertNode(U&& ...x) -> Node&;
+
+private:
     unsigned nphase() { return phase_ == 0 ? 1 : 0; }
     using NodeList = std::forward_list<Node>;
 
@@ -82,26 +89,34 @@ template <class T> class Graph {
 
 template <class T>
 template <class... U>
-Graph<T>::Node::Node(unsigned phase, U&& ...data) : data(std::forward<U>(data)...), visited_(phase) {}
+Graph<T>::Node::Node(unsigned phase, U&& ...data)
+    : data(std::forward<U>(data)...), visited_(phase) {}
 
-template <class T> void Graph<T>::Node::insertEdge(Node& n) { edges_.emplace_back(&n); }
+template <class T>
+void Graph<T>::Node::insertEdge(Node& n) { edges_.emplace_back(&n); }
 
-template <class T> typename Graph<T>::NodeVec::const_iterator Graph<T>::Node::begin() const { return edges_.begin(); }
+template <class T>
+auto Graph<T>::Node::begin() const -> typename NodeVec::const_iterator { return edges_.begin(); }
 
-template <class T> typename Graph<T>::NodeVec::const_iterator Graph<T>::Node::end() const { return edges_.end(); }
+template <class T>
+auto Graph<T>::Node::end()   const -> typename NodeVec::const_iterator { return edges_.end(); }
 
 // }}}
 // {{{ definition of Graph<T>
 
-template <class T> template <class... U> typename Graph<T>::Node& Graph<T>::insertNode(U&& ...x) {
+template <class T>
+template <class... U>
+auto Graph<T>::insertNode(U&& ...x) -> Node& {
     nodes_.emplace_front(nphase(), std::forward<U>(x)...);
     return nodes_.front();
 }
 
-template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
+template <class T>
+auto Graph<T>::tarjan() -> SCCVec {
     SCCVec sccs;
     NodeVec stack;
     NodeVec trail;
+
     for (auto& x : nodes_) {
         if (x.visited_ == nphase()) {
             unsigned index = 1;
@@ -112,22 +127,27 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
                 trail.emplace_back(&x);
             };
             push(x);
+
             while (!stack.empty()) {
                 auto& y = stack.back();
                 auto end = y->edges_.end();
+
                 for (; y->finished_ != end && (*y->finished_)->visited_ != nphase(); ++y->finished_) {
                 }
+
                 if (y->finished_ != end) {
                     push(**y->finished_++);
                 } else {
                     stack.pop_back();
                     bool root = true;
+
                     for (auto& z : y->edges_) {
                         if (z->visited_ != phase_ && z->visited_ < y->visited_) {
                             root = false;
                             y->visited_ = z->visited_;
                         }
                     }
+
                     if (root) {
                         sccs.emplace_back();
                         do {
@@ -140,6 +160,7 @@ template <class T> typename Graph<T>::SCCVec Graph<T>::tarjan() {
             }
         }
     }
+
     phase_ = nphase();
     return sccs;
 }

@@ -48,7 +48,7 @@ using Potassco::WeightLit;
 using Potassco::WeightLitSpan;
 
 class Reifier : public Potassco::AbstractProgram {
-  public:
+public:
     Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep);
     ~Reifier() noexcept override;
 
@@ -77,24 +77,31 @@ class Reifier : public Potassco::AbstractProgram {
 
     void endStep() override;
 
-  private:
+private:
     using Graph = Gringo::Graph<Atom_t>;
-    template <class L> void calculateSCCs(AtomSpan head, std::span<const L> body);
+    template <typename L>
+    void calculateSCCs(AtomSpan head, std::span<const L> body);
 
-    template <typename... T> void printFact(const char* name, const T& ...args);
-    template <typename... T> void printStepFact(const char* name, const T& ...args);
-    template <class M, class T> size_t tuple(M& map, const char* name, const T& args);
-    template <class M, class T> size_t tuple(M& map, const char* name, std::vector<T>&& args);
-    template <class M, class T> size_t ordered_tuple(M& map, const char* name, const T& args);
-    template <class M, class T> size_t ordered_tuple(M& map, const char* name, std::vector<T>&& args);
-    size_t theoryTuple(IdSpan args);
-    size_t litTuple(LitSpan args);
-    size_t atomTuple(AtomSpan args);
-    size_t theoryElementTuple(IdSpan args);
-    size_t weightLitTuple(WeightLitSpan args);
-    Graph::Node& addNode(Atom_t atom);
+    template <typename... T>
+    void printFact(const char* name, const T&... args);
+    template <typename... T>
+    void printStepFact(const char* name, const T&... args);
+    template <typename M, typename T>
+    auto tuple(M& map, const char* name, const T& args) -> size_t;
+    template <typename M, typename T>
+    auto tuple(M& map, const char* name, std::vector<T>&& args) -> size_t;
+    template <typename M, typename T>
+    auto orderedTuple(M& map, const char* name, const T& args) -> size_t;
+    template <typename M, typename T>
+    auto orderedTuple(M& map, const char* name, std::vector<T>&& args) -> size_t;
+    auto theoryTuple(IdSpan args) -> size_t;
+    auto litTuple(LitSpan args) -> size_t;
+    auto atomTuple(AtomSpan args) -> size_t;
+    auto theoryElementTuple(IdSpan args) -> size_t;
+    auto weightLitTuple(WeightLitSpan args) -> size_t;
+    auto addNode(Atom_t atom) -> Graph::Node&;
 
-  private:
+private:
     using WLVec = std::vector<std::pair<Lit_t, Weight_t>>;
     struct StepData {
         std::unordered_map<std::vector<Id_t>, size_t, Hash<std::vector<Id_t>>> theoryTuples;

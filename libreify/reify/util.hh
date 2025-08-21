@@ -22,6 +22,7 @@
 
 // }}}
 
+
 #pragma once
 
 #include <potassco/basic_types.h>
@@ -31,22 +32,27 @@
 
 namespace Reify {
 
-template <typename T> void printValue(std::ostream& out, const T& value) { out << value; }
+template <typename T>
+void printValue(std::ostream& out, const T& value) { out << value; }
 
-template <typename T, typename U> void printValue(std::ostream& out, const std::pair<T, U>& value) {
+template <typename T, typename U>
+void printValue(std::ostream& out, const std::pair<T, U>& value) {
     printValue(out, value.first);
     out << ",";
     printValue(out, value.second);
 }
 
-template <typename T, typename... V> void printComma(std::ostream& out, const T& t, const V& ...v) {
+template <typename T, typename... V>
+void printComma(std::ostream& out, const T& t, const V& ...v) {
     printValue(out, t);
     ((out << "," , printValue(out, v)), ...);
 }
 
-template <typename T> struct Hash : std::hash<T> {};
+template <typename T>
+struct Hash : std::hash<T> {};
 
-template <typename T, typename U> struct Hash<std::pair<T, U>> {
+template <typename T, typename U>
+struct Hash<std::pair<T, U>> {
     size_t operator()(const std::pair<T, U>& p) const noexcept {
         size_t hash = std::hash<T>()(p.first);
         hash ^= Hash<U>()(p.second) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
@@ -54,7 +60,8 @@ template <typename T, typename U> struct Hash<std::pair<T, U>> {
     }
 };
 
-template <typename T> struct Hash<std::vector<T>> {
+template <typename T>
+struct Hash<std::vector<T>> {
     size_t operator()(const std::vector<T>& vec) const noexcept {
         size_t hash = vec.size();
         for (auto& x : vec) {
@@ -64,7 +71,8 @@ template <typename T> struct Hash<std::vector<T>> {
     }
 };
 
-template <class T> std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()}; }
+template <typename T>
+std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()}; }
 
 inline std::string quote(std::string_view str) {
     std::string res;
