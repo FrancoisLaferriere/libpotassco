@@ -49,8 +49,10 @@ using Potassco::WeightLitSpan;
 
 class Reifier : public Potassco::AbstractProgram {
 public:
-    Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep);
+    explicit Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep);
     ~Reifier() noexcept override;
+    Reifier(const Reifier&)            = delete;
+    Reifier& operator=(const Reifier&) = delete;
 
     void parse(std::istream& in);
 
