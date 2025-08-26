@@ -29,9 +29,9 @@
 #include <vector>
 
 namespace Gringo {
-
-// {{{ declaration of Graph<T>
-
+/////////////////////////////////////////////////////////////////////////////////////////
+// Graph template
+/////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 class Graph {
 public:
@@ -83,10 +83,9 @@ private:
     unsigned phase_ = 0;
 };
 
-// }}}
-
-// {{{ definition of Graph<T>::Node
-
+/////////////////////////////////////////////////////////////////////////////////////////
+// Graph<T>::Node
+/////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 template <class... U>
 Graph<T>::Node::Node(unsigned phase, U&& ...data)
@@ -101,9 +100,9 @@ auto Graph<T>::Node::begin() const -> typename NodeVec::const_iterator { return 
 template <class T>
 auto Graph<T>::Node::end()   const -> typename NodeVec::const_iterator { return edges_.end(); }
 
-// }}}
-// {{{ definition of Graph<T>
-
+/////////////////////////////////////////////////////////////////////////////////////////
+// Graph<T> definitions
+/////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 template <class... U>
 auto Graph<T>::insertNode(U&& ...x) -> Node& {
@@ -164,7 +163,4 @@ auto Graph<T>::tarjan() -> SCCVec {
     phase_ = nphase();
     return sccs;
 }
-
-// }}}
-
 } // namespace Gringo
