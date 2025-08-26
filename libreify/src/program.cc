@@ -161,7 +161,7 @@ void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
         Graph::Node& u = addNode(atom);
         for (const auto& elem : body) {
             if (lit(elem) > 0) {
-                Graph::Node& v = addNode(lit(elem));
+                Graph::Node& v = addNode(static_cast<Atom_t>(lit(elem)));
                 u.insertEdge(v);
             }
         }

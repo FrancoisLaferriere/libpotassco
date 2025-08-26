@@ -42,7 +42,7 @@ public:
     struct Node {
         friend class Graph;
         template <class... U>
-        Node(unsigned phase, U&& ...data);
+        Node(unsigned phase, U&& ...args);
 
         Node(const Node& other) = delete;
         Node(Node&& other) noexcept = default;
@@ -88,8 +88,8 @@ private:
 /////////////////////////////////////////////////////////////////////////////////////////
 template <class T>
 template <class... U>
-Graph<T>::Node::Node(unsigned phase, U&& ...data)
-    : data(std::forward<U>(data)...), visited_(phase) {}
+Graph<T>::Node::Node(unsigned phase, U&& ...args)
+    : data(std::forward<U>(args)...), visited_(phase) {}
 
 template <class T>
 void Graph<T>::Node::insertEdge(Node& n) { edges_.emplace_back(&n); }
@@ -119,16 +119,16 @@ auto Graph<T>::tarjan() -> SCCVec {
     for (auto& x : nodes_) {
         if (x.visited_ == nphase()) {
             unsigned index = 1;
-            auto push = [&stack, &trail, &index](Node& x) {
-                x.visited_ = ++index;
-                x.finished_ = x.edges_.begin();
-                stack.emplace_back(&x);
-                trail.emplace_back(&x);
+            auto push = [&stack, &trail, &index](Node& n) {
+                n.visited_ = ++index;
+                n.finished_ = n.edges_.begin();
+                stack.emplace_back(&n);
+                trail.emplace_back(&n);
             };
             push(x);
 
             while (!stack.empty()) {
-                auto& y = stack.back();
+                Node* y = stack.back();
                 auto end = y->edges_.end();
 
                 for (; y->finished_ != end && (*y->finished_)->visited_ != nphase(); ++y->finished_) {
