@@ -18,8 +18,11 @@ set(header
     ${header_path}/convert.h
     ${header_path}/enum.h
     ${header_path}/error.h
+    ${header_path}/graph.h
     ${header_path}/match_basic_types.h
     ${header_path}/platform.h
+    ${header_path}/reify.h
+    ${header_path}/reify_utils.h
     ${header_path}/rule_utils.h
     ${header_path}/smodels.h
     ${header_path}/theory_data.h)
@@ -35,6 +38,7 @@ set(src
     error.cpp
     match_basic_types.cpp
     program_options.cpp
+    reify.cpp
     rule_utils.cpp
     smodels.cpp
     string_convert.cpp

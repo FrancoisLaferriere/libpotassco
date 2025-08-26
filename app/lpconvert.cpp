@@ -27,12 +27,12 @@
 #include <potassco/aspif_text.h>
 #include <potassco/convert.h>
 #include <potassco/error.h>
+#include <potassco/reify.h>
 #include <potassco/smodels.h>
 
 #include <potassco/program_opts/errors.h>
 #include <potassco/program_opts/typed_value.h>
 
-#include <reify/program.hh>
 
 #include <cctype>
 #include <fstream>

@@ -1,5 +1,5 @@
 add_executable(lpconvert lpconvert.cpp)
-target_link_libraries(lpconvert libpotassco libreify)
+target_link_libraries(lpconvert libpotassco)
 set_target_properties(lpconvert PROPERTIES FOLDER exe)
 if(LIB_POTASSCO_BUILD_STATIC)
     if(NOT MSVC)

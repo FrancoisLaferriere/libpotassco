@@ -22,8 +22,8 @@
 
 // }}}
 
-#include <reify/program.hh>
 #include <potassco/enum.h>
+#include <potassco/reify.h>
 
 #include <algorithm>
 #include <cassert>
