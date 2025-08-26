@@ -28,7 +28,7 @@
 #include <forward_list>
 #include <vector>
 
-namespace Gringo {
+namespace Potassco {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Graph template
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -163,4 +163,4 @@ auto Graph<T>::tarjan() -> SCCVec {
     phase_ = nphase();
     return sccs;
 }
-} // namespace Gringo
+} // namespace Potassco

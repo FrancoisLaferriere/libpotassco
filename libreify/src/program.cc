@@ -30,7 +30,7 @@
 #include <iostream>
 #include <sstream>
 
-namespace Reify {
+namespace Potassco {
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Reifier
@@ -134,7 +134,7 @@ void Reifier::initProgram(bool incremental) {
 void Reifier::beginStep() {}
 
 void Reifier::rule(HeadType ht, AtomSpan head, LitSpan body) {
-    const char* h = ht == Potassco::HeadType::disjunctive ? "disjunction" : "choice";
+    const char* h = ht == HeadType::disjunctive ? "disjunction" : "choice";
     std::ostringstream hss, bss;
     hss << h << "(" << atomTuple(head) << ")";
     bss << "normal(" << litTuple(body) << ")";
@@ -145,7 +145,7 @@ void Reifier::rule(HeadType ht, AtomSpan head, LitSpan body) {
 }
 
 void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan body) {
-    const char* h = ht == Potassco::HeadType::disjunctive ? "disjunction" : "choice";
+    const char* h = ht == HeadType::disjunctive ? "disjunction" : "choice";
     std::ostringstream hss, bss;
     hss << h << "(" << atomTuple(head) << ")";
     bss << "sum(" << weightLitTuple(body) << "," << bound << ")";
@@ -160,8 +160,8 @@ void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
     for (const auto& atom : head) {
         Graph::Node& u = addNode(atom);
         for (const auto& elem : body) {
-            if (Potassco::lit(elem) > 0) {
-                Graph::Node& v = addNode(Potassco::lit(elem));
+            if (lit(elem) > 0) {
+                Graph::Node& v = addNode(lit(elem));
                 u.insertEdge(v);
             }
         }
@@ -191,7 +191,7 @@ void Reifier::output(Id_t termId, LitSpan condition) {
 }
 
 void Reifier::external(Atom_t a, TruthValue v) {
-    printStepFact("external", a, Potassco::enum_name(v));
+    printStepFact("external", a, enum_name(v));
 }
 
 void Reifier::assume(LitSpan lits) {
@@ -201,7 +201,7 @@ void Reifier::assume(LitSpan lits) {
 }
 
 void Reifier::heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpan condition) {
-    printStepFact("heuristic", a, Potassco::enum_name(t), bias, prio, litTuple(condition));
+    printStepFact("heuristic", a, enum_name(t), bias, prio, litTuple(condition));
 }
 
 void Reifier::acycEdge(int s, int t, LitSpan condition) {
@@ -260,6 +260,6 @@ void Reifier::endStep() {
     }
 }
 
-void Reifier::parse(std::istream& in) { Potassco::readAspif(in, *this); }
+void Reifier::parse(std::istream& in) { readAspif(in, *this); }
 
-} // namespace Reify
+} // namespace Potassco

@@ -30,7 +30,7 @@
 #include <iostream>
 #include <vector>
 
-namespace Reify {
+namespace Potassco {
 
 template <typename T>
 void printValue(std::ostream& out, const T& value) { out << value; }
@@ -104,4 +104,4 @@ inline std::string quote(std::string_view str) {
     return res;
 }
 
-} // namespace Reify
+} // namespace Potassco

@@ -32,21 +32,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace Reify {
-
-using Potassco::Atom_t;
-using Potassco::AtomSpan;
-using Potassco::HeadType;
-using Potassco::DomModifier;
-using Potassco::Id_t;
-using Potassco::IdSpan;
-using Potassco::Lit_t;
-using Potassco::LitSpan;
-using Potassco::TruthValue;
-using Potassco::Weight_t;
-using Potassco::WeightLit;
-using Potassco::WeightLitSpan;
-
+namespace Potassco {
 //! Writes a program in reified facts format to the given output stream.
 /*!
  * \ingroup WriteType
@@ -110,7 +96,7 @@ public:
     void endStep() override;
 
 private:
-    using Graph = Gringo::Graph<Atom_t>;
+    using Graph = Potassco::Graph<Atom_t>;
     //! Compute SCCs for a given head and body literals.template <typename L>
     template <typename L>
     void calculateSCCs(AtomSpan head, std::span<const L> body);
@@ -161,4 +147,4 @@ private:
     bool reifyStep_;
 };
 
-} // namespace Reify
+} // namespace Potassco

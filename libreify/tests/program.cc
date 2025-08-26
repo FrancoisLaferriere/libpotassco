@@ -4,13 +4,11 @@
 
 #include <sstream>
 
-namespace Reify {
-namespace Test {
-
+namespace Potassco::Test::Reify {
 bool read(std::stringstream& in, std::stringstream& out, bool scc = false, bool step = false) {
     Reifier prg(out, scc, step);
-    Potassco::AspifTextInput parser(&prg);
-    return Potassco::readProgram(in, parser) == 0;
+    AspifTextInput parser(&prg);
+    return readProgram(in, parser) == 0;
 }
 
 TEST_CASE("program", "[program]") {
@@ -121,6 +119,4 @@ TEST_CASE("program", "[program]") {
                 "literal_tuple(0).\nliteral_tuple(0,1).\nedge(1,2,0).\nliteral_tuple(1).\nedge(2,1,1).\n");
     }
 }
-
-} // namespace Test
-} // namespace Reify
+} // namespace Potassco::Test::Reify
