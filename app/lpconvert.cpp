@@ -168,7 +168,7 @@ void LpConvert::run() try {
         case Format::aspif_v1: out1 = std::make_unique<Potassco::AspifOutput>(os, 1); break;
         case Format::auto_   : [[fallthrough]];
         case Format::aspif   : out1 = std::make_unique<Potassco::AspifOutput>(os, 2); break;
-        case Format::reify   : out1 = std::make_unique<Reify::Reifier>(os, reifySCCs, reifySteps); break;
+        case Format::reify   : out1 = std::make_unique<Potassco::Reifier>(os, reifySCCs, reifySteps); break;
     }
     in.peek() == 'a' ? Potassco::readAspif(in, *out1) : Potassco::readSmodels(in, *out1, opts);
 }
