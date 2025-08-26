@@ -25,9 +25,9 @@
 #pragma once
 
 #include <cstdint>
-#include <gringo/graph.hh>
 #include <potassco/aspif.h>
-#include <reify/util.hh>
+#include <potassco/graph.h>
+#include <potassco/reify_utils.h>
 
 #include <unordered_map>
 #include <vector>

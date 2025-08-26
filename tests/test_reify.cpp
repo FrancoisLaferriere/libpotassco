@@ -1,6 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <potassco/aspif_text.h>
-#include <reify/program.hh>
+#include <potassco/reify.h>
 
 #include <sstream>
 
