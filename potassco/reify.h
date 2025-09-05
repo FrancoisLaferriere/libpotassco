@@ -96,7 +96,6 @@ public:
     void endStep() override;
 
 private:
-    using Graph = Potassco::Graph<Atom_t>;
     //! Compute SCCs for a given head and body literals.template <typename L>
     template <typename L>
     void calculateSCCs(AtomSpan head, std::span<const L> body);
@@ -127,9 +126,10 @@ private:
     //! Insert a weighted literal tuple and return its ID.
     auto weightLitTuple(WeightLitSpan args) -> size_t;
     //! Add a node for the given atom to the graph.
-    auto addNode(Atom_t atom) -> Graph::Node&;
+    auto addNode(Atom_t atom) -> uint32_t;
 
 private:
+    using Graph = Potassco::Graph<Atom_t>;
     using WLVec = std::vector<std::pair<Lit_t, Weight_t>>;
     //! Stores step-specific tuples and graph nodes.
     struct StepData {
@@ -139,7 +139,7 @@ private:
         std::unordered_map<std::vector<Atom_t>, size_t, Hash<std::vector<Atom_t>>> atomTuples;
         std::unordered_map<WLVec, size_t, Hash<WLVec>> weightLitTuples;
         Graph graph_;
-        std::unordered_map<Atom_t, Graph::Node*> nodes_;
+        std::unordered_map<Atom_t, uint32_t> nodes_;
     } stepData_;
     std::ostream& out_;
     size_t step_ = 0;

@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include <potassco/aspif_text.h>
+#include <potassco/graph.h>
 #include <potassco/reify.h>
 
 #include <sstream>
@@ -117,6 +118,124 @@ TEST_CASE("program", "[program]") {
         REQUIRE(read(input, output));
         REQUIRE(output.str() ==
                 "literal_tuple(0).\nliteral_tuple(0,1).\nedge(1,2,0).\nliteral_tuple(1).\nedge(2,1,1).\n");
+    }
+}
+
+inline std::string toString(const Graph<uint32_t>::SccVec& sccs) {
+    std::ostringstream out;
+    out << "[";
+    std::string SccVecSeparator;
+    for (const auto& scc : sccs) {
+        out << SccVecSeparator << "[";
+        std::string SccSeparator;
+        for (auto id : scc) {
+            out << SccSeparator << static_cast<char>('a' + id);
+            SccSeparator = ",";
+        }
+        out << "]";
+        SccVecSeparator = ",";
+    }
+    out << "]";
+    return out.str();
+}
+
+TEST_CASE("Test Graph", "[reify]") {
+    Graph<uint32_t> g;
+    SECTION("empty graph") {
+        g.clear();
+        REQUIRE(g.computeSccs().empty());
+    }
+    SECTION("single node") {
+        g.clear();
+        g.addNode(0);
+        auto sccs = g.computeSccs();
+        REQUIRE(sccs.size() == 1);
+        REQUIRE(toString(sccs) == "[[a]]");
+    }
+    SECTION("acyclic graph") {
+        g.clear();
+        auto idA = g.addNode(0); // a
+        auto idB = g.addNode(1); // b
+        auto idC = g.addNode(2); // c
+
+        g.addEdge(idA, idB);
+        g.addEdge(idB, idC);
+
+        auto sccs = g.computeSccs();
+        REQUIRE(sccs.size() == 3);
+        REQUIRE(toString(sccs) == "[[c],[b],[a]]");
+
+        REQUIRE(g.computeNonTrivialSccs().empty());
+    }
+    SECTION("single cycle") {
+        g.clear();
+        auto idA = g.addNode(0);
+        auto idB = g.addNode(1);
+        auto idC = g.addNode(2);
+        g.addNode(3);
+
+        g.addEdge(idA, idB);
+        g.addEdge(idB, idC);
+        g.addEdge(idC, idA);
+
+        auto sccs = g.computeSccs();
+        REQUIRE(sccs.size() == 2); // cycle + trivial node
+        REQUIRE(toString(sccs) == "[[c,b,a],[d]]");
+    }
+    SECTION("multiple cycles") {
+        g.clear();
+        auto idA = g.addNode(0);
+        auto idB = g.addNode(1);
+        auto idC = g.addNode(2);
+        auto idD = g.addNode(3);
+        auto idE = g.addNode(4);
+        auto idF = g.addNode(5);
+        auto idG = g.addNode(6);
+        auto idH = g.addNode(7);
+        auto idI = g.addNode(8);
+
+        g.addEdge(idA, idG);
+        g.addEdge(idB, idE);
+        g.addEdge(idB, idH);
+        g.addEdge(idC, idI);
+        g.addEdge(idC, idH);
+        g.addEdge(idD, idF);
+        g.addEdge(idE, idA);
+        g.addEdge(idF, idB);
+        g.addEdge(idF, idC);
+        g.addEdge(idG, idD);
+
+        REQUIRE(toString(g.computeSccs()) == "[[h],[i],[c],[e,b,f,d,g,a]]");
+    }
+    SECTION("graph intact after computeSccs") {
+        g.clear();
+        auto idA = g.addNode(0);
+        auto idB = g.addNode(1);
+        auto idC = g.addNode(2);
+        auto idD = g.addNode(3);
+        auto idE = g.addNode(4);
+        auto idF = g.addNode(5);
+        auto idG = g.addNode(6);
+        auto idH = g.addNode(7);
+        auto idI = g.addNode(8);
+
+        g.addEdge(idA, idB);
+        g.addEdge(idB, idC);
+        g.addEdge(idC, idH);
+        g.addEdge(idC, idD);
+        g.addEdge(idD, idE);
+        g.addEdge(idE, idF);
+        g.addEdge(idE, idB);
+        g.addEdge(idE, idC);
+        g.addEdge(idF, idG);
+        g.addEdge(idG, idF);
+        g.addEdge(idH, idI);
+        g.addEdge(idI, idH);
+
+        auto expected = "[[i,h],[g,f],[e,d,c,b],[a]]";
+        REQUIRE(toString(g.computeSccs()) == expected);
+        REQUIRE(toString(g.computeSccs()) == expected);
+        REQUIRE(toString(g.computeSccs()) == expected);
     }
 }
 } // namespace Potassco::Test::Reify
