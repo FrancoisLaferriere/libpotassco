@@ -35,8 +35,8 @@ namespace Potassco {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Reifier
 /////////////////////////////////////////////////////////////////////////////////////////
-Reifier::Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep)
-    : out_(out), calculateSCCs_(calculateSCCs), reifyStep_(reifyStep) {}
+Reifier::Reifier(std::ostream& out, const Options& opts)
+    : out_(out), calculateSCCs_(opts.calculateSCCs), reifyStep_(opts.reifyStep) {}
 
 Reifier::~Reifier() noexcept = default;
 

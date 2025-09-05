@@ -39,13 +39,17 @@ namespace Potassco {
  */
 class Reifier : public Potassco::AbstractProgram {
 public:
+    //! Options for configuring Reifier behavior.
+    struct Options {
+        bool calculateSCCs = false; //!< Compute strongly connected components.
+        bool reifyStep     = false; //!< Include step information in output.
+    };
     //! Creates a new object and associates it with the given output stream.
     /*!
      * \param out Output stream to which program is written.
-     * \param calculateSCCs Whether to compute strongly connected components.
-     * \param reifyStep Whether to include step information in output.
+     * \param opts Options to configure Reifier behavior.
      */
-    explicit Reifier(std::ostream& out, bool calculateSCCs, bool reifyStep);
+    explicit Reifier(std::ostream& out, const Options& opts);
     ~Reifier() noexcept override;
     Reifier(const Reifier&)            = delete;
     Reifier& operator=(const Reifier&) = delete;

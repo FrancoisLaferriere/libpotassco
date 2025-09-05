@@ -7,7 +7,7 @@
 
 namespace Potassco::Test::Reify {
 bool read(std::stringstream& in, std::stringstream& out, bool scc = false, bool step = false) {
-    Reifier prg(out, scc, step);
+    Reifier prg(out, {scc, step});
     AspifTextInput parser(&prg);
     return readProgram(in, parser) == 0;
 }
