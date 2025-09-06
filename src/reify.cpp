@@ -63,6 +63,7 @@ auto Reifier::tuple(M& map, const char* name, const T& args) -> size_t {
 
 template <typename M, typename T>
 auto Reifier::tuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
+    std::sort(args.begin(), args.end());
     auto ret = map.emplace(std::move(args), map.size());
     if (ret.second) {
         printStepFact(name, ret.first->second);
