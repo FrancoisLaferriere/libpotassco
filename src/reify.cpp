@@ -137,22 +137,18 @@ void Reifier::initProgram(bool incremental) {
 void Reifier::beginStep() {}
 
 void Reifier::rule(HeadType ht, AtomSpan head, LitSpan body) {
-    const char* h = ht == HeadType::disjunctive ? "disjunction" : "choice";
-    std::ostringstream hss, bss;
-    hss << h << "(" << atomTuple(head) << ")";
-    bss << "normal(" << litTuple(body) << ")";
-    printStepFact("rule", hss.str(), bss.str());
+    auto headId = atomTuple(head);
+    auto bodyId = litTuple(body);
+    printStepFact("rule", Head{ht, headId}, Normal{bodyId});
     if (calculateSCCs_) {
         calculateSCCs(head, body);
     }
 }
 
 void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan body) {
-    const char* h = ht == HeadType::disjunctive ? "disjunction" : "choice";
-    std::ostringstream hss, bss;
-    hss << h << "(" << atomTuple(head) << ")";
-    bss << "sum(" << weightLitTuple(body) << "," << bound << ")";
-    printStepFact("rule", hss.str(), bss.str());
+    auto headId = atomTuple(head);
+    auto bodyId = weightLitTuple(body);
+    printStepFact("rule", Head{ht, headId}, Sum{bodyId, bound});
     if (calculateSCCs_) {
         calculateSCCs(head, body);
     }
@@ -216,7 +212,7 @@ void Reifier::theoryTerm(Id_t termId, int number) {
 }
 
 void Reifier::theoryTerm(Id_t termId, std::string_view name) {
-    printStepFact("theory_string", termId, quote(name));
+    printStepFact("theory_string", termId, Quoted{name});
 }
 
 void Reifier::theoryTerm(Id_t termId, int cId, IdSpan args) {

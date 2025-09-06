@@ -32,6 +32,21 @@
 
 namespace Potassco {
 
+struct Head {
+    HeadType type;
+    size_t   id;
+};
+struct Normal {
+    size_t id;
+};
+struct Sum {
+    size_t   id;
+    Weight_t bound;
+};
+struct Quoted {
+    std::string_view str;
+};
+
 template <typename T>
 void printValue(std::ostream& out, const T& value) { out << value; }
 
@@ -42,10 +57,32 @@ void printValue(std::ostream& out, const std::pair<T, U>& value) {
     printValue(out, value.second);
 }
 
+inline void printValue(std::ostream& out, const Head& h) {
+    const char* name = (h.type == HeadType::disjunctive ? "disjunction" : "choice");
+    out << name << "(" << h.id << ")";
+}
+
+inline void printValue(std::ostream& out, const Normal& n) { out << "normal(" << n.id << ")"; }
+
+inline void printValue(std::ostream& out, const Sum& s) { out << "sum(" << s.id << "," << s.bound << ")"; }
+
+inline void printValue(std::ostream& out, const Quoted& q) {
+    out.put('"');
+    for (auto c : q.str) {
+        switch (c) {
+            case '\n': out << "\\n"; break;
+            case '\\': out << "\\\\"; break;
+            case '"' : out << "\\\""; break;
+            default  : out.put(c); break;
+        }
+    }
+    out.put('"');
+}
+
 template <typename T, typename... V>
-void printComma(std::ostream& out, const T& t, const V& ...v) {
+void printComma(std::ostream& out, const T& t, const V&... v) {
     printValue(out, t);
-    ((out << "," , printValue(out, v)), ...);
+    ((out << ",", printValue(out, v)), ...);
 }
 
 template <typename T>
@@ -73,35 +110,5 @@ struct Hash<std::vector<T>> {
 
 template <typename T>
 std::vector<T> toVec(std::span<const T> span) { return {span.begin(), span.end()}; }
-
-inline std::string quote(std::string_view str) {
-    std::string res;
-    res.push_back('"');
-    for (auto c : str) {
-        switch (c) {
-            case '\n': {
-                res.push_back('\\');
-                res.push_back('n');
-                break;
-            }
-            case '\\': {
-                res.push_back('\\');
-                res.push_back('\\');
-                break;
-            }
-            case '"': {
-                res.push_back('\\');
-                res.push_back('"');
-                break;
-            }
-            default: {
-                res.push_back(c);
-                break;
-            }
-        }
-    }
-    res.push_back('"');
-    return res;
-}
 
 } // namespace Potassco
