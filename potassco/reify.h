@@ -1,17 +1,19 @@
-// {{{ MIT License
-
-// Copyright 2017 Roland Kaminski
-
+//
+// Copyright (c) 2017 - 2025, Roland Kaminski
+// Copyright (c) 2025 - present, Francois Laferriere
+//
+// This file is part of Potassco.
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
 // deal in the Software without restriction, including without limitation the
 // rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 // sell copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,15 +21,12 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
-
-// }}}
-
+//
 #pragma once
 
-#include <cstdint>
 #include <potassco/aspif.h>
 
-#include <unordered_map>
+#include <cstdint>
 #include <vector>
 
 namespace Potassco {
@@ -39,7 +38,7 @@ class Reifier : public Potassco::AbstractProgram {
 public:
     //! Options for configuring Reifier behavior.
     struct Options {
-        bool calculateSCCs = false; //!< Compute strongly connected components.
+        bool calculateSccs = false; //!< Compute strongly connected components.
         bool reifyStep     = false; //!< Include step information in output.
     };
     //! Creates a new object and associates it with the given output stream.
@@ -98,9 +97,9 @@ public:
     void endStep() override;
 
 private:
-    //! Compute SCCs for a given head and body literals.template <typename L>
+    //! Compute SCCs for a given head and body literals.
     template <typename L>
-    void calculateSCCs(AtomSpan head, std::span<const L> body);
+    void calculateSccs(AtomSpan head, std::span<const L> body);
     //! Print a fact to the output stream.
     template <typename... T>
     void printFact(const char* name, const T&... args);
@@ -136,7 +135,7 @@ private:
     using StepDataPtr = std::unique_ptr<StepData>;
 
     std::ostream& out_;
-    bool          calculateSCCs_;
+    bool          calculateSccs_;
     bool          reifyStep_;
     StepDataPtr   stepData_;
     size_t        step_ = 0;

@@ -1,17 +1,19 @@
-// {{{ MIT License
-
-// Copyright 2017 Roland Kaminski
-
+//
+// Copyright (c) 2017 - 2025, Roland Kaminski
+// Copyright (c) 2025 - present, Francois Laferriere
+//
+// This file is part of Potassco.
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
 // deal in the Software without restriction, including without limitation the
 // rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
 // sell copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,18 +21,16 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
-
-// }}}
-
+//
 #include <potassco/enum.h>
+#include <potassco/error.h>
 #include <potassco/graph.h>
 #include <potassco/reify.h>
 #include <potassco/reify_utils.h>
 
 #include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <sstream>
+#include <ostream>
+#include <unordered_map>
 
 namespace Potassco {
 
@@ -47,7 +47,7 @@ struct Reifier::StepData {
     SeqMap<Atom_t>    atomTuples;
     SeqMap<WeightLit> weightLitTuples;
 
-    Graph<Atom_t> graph;
+    Graph<Atom_t>                        graph;
     std::unordered_map<Atom_t, uint32_t> nodes;
 
     void clear() {
@@ -62,14 +62,17 @@ struct Reifier::StepData {
 };
 
 Reifier::Reifier(std::ostream& out, const Options& opts)
-    : out_(out), calculateSCCs_(opts.calculateSCCs), reifyStep_(opts.reifyStep), stepData_(std::make_unique<StepData>()){}
+    : out_(out)
+    , calculateSccs_(opts.calculateSccs)
+    , reifyStep_(opts.reifyStep)
+    , stepData_(std::make_unique<StepData>()) {}
 
 Reifier::~Reifier() noexcept = default;
 
 template <typename... T>
 void Reifier::printFact(const char* name, const T&... args) {
     out_ << name << "(";
-    printComma(out_, args...);
+    printCommaSeparated(out_, args...);
     out_ << ").\n";
 }
 
@@ -77,7 +80,8 @@ template <typename... T>
 void Reifier::printStepFact(const char* name, const T&... args) {
     if (reifyStep_) {
         printFact(name, args..., step_);
-    } else {
+    }
+    else {
         printFact(name, args...);
     }
 }
@@ -90,14 +94,12 @@ auto Reifier::tuple(M& map, const char* name, const T& args) -> size_t {
 template <typename M, typename T>
 auto Reifier::tuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
     std::sort(args.begin(), args.end());
-    auto ret = map.emplace(std::move(args), map.size());
-    if (ret.second) {
-        printStepFact(name, ret.first->second);
-        for (const auto& x : ret.first->first) {
-            printStepFact(name, ret.first->second, x);
-        }
+    auto [it, inserted] = map.emplace(std::move(args), map.size());
+    if (inserted) {
+        printStepFact(name, it->second);
+        for (const auto& x : it->first) { printStepFact(name, it->second, x); }
     }
-    return ret.first->second;
+    return it->second;
 }
 
 template <typename M, typename T>
@@ -107,45 +109,39 @@ auto Reifier::orderedTuple(M& map, const char* name, const T& args) -> size_t {
 
 template <typename M, typename T>
 auto Reifier::orderedTuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
-    auto ret = map.emplace(std::move(args), map.size());
-    if (ret.second) {
-        printStepFact(name, ret.first->second);
+    auto [it, inserted] = map.emplace(std::move(args), map.size());
+    if (inserted) {
+        printStepFact(name, it->second);
         int arg = 0;
-        for (const auto& x : ret.first->first) {
-            printStepFact(name, ret.first->second, arg, x);
+        for (const auto& x : it->first) {
+            printStepFact(name, it->second, arg, x);
             ++arg;
         }
     }
-    return ret.first->second;
+    return it->second;
 }
 
-auto Reifier::theoryTuple(IdSpan args) -> size_t {
-    return orderedTuple(stepData_->theoryTuples, "theory_tuple", args);
-}
+auto Reifier::theoryTuple(IdSpan args) -> size_t { return orderedTuple(stepData_->theoryTuples, "theory_tuple", args); }
 
 auto Reifier::theoryElementTuple(IdSpan args) -> size_t {
     return tuple(stepData_->theoryElementTuples, "theory_element_tuple", args);
 }
 
-auto Reifier::litTuple(LitSpan args) -> size_t {
-    return tuple(stepData_->litTuples, "literal_tuple", args);
-}
+auto Reifier::litTuple(LitSpan args) -> size_t { return tuple(stepData_->litTuples, "literal_tuple", args); }
 
 auto Reifier::weightLitTuple(WeightLitSpan args) -> size_t {
     return tuple(stepData_->weightLitTuples, "weighted_literal_tuple", args);
 }
 
-auto Reifier::atomTuple(AtomSpan args) -> size_t {
-    return tuple(stepData_->atomTuples, "atom_tuple", args);
-}
+auto Reifier::atomTuple(AtomSpan args) -> size_t { return tuple(stepData_->atomTuples, "atom_tuple", args); }
 
 auto Reifier::addNode(Atom_t atom) -> uint32_t {
     auto& nodesMap = stepData_->nodes;
-    auto it = nodesMap.find(atom);
+    auto  it       = nodesMap.find(atom);
     if (it != nodesMap.end()) {
         return it->second;
     }
-    auto nodeId = stepData_->graph.addNode(atom);
+    auto nodeId    = stepData_->graph.addNode(atom);
     nodesMap[atom] = nodeId;
     return nodeId;
 }
@@ -162,8 +158,8 @@ void Reifier::rule(HeadType ht, AtomSpan head, LitSpan body) {
     auto headId = atomTuple(head);
     auto bodyId = litTuple(body);
     printStepFact("rule", Head{ht, headId}, Normal{bodyId});
-    if (calculateSCCs_) {
-        calculateSCCs(head, body);
+    if (calculateSccs_) {
+        calculateSccs(head, body);
     }
 }
 
@@ -171,13 +167,13 @@ void Reifier::rule(HeadType ht, AtomSpan head, Weight_t bound, WeightLitSpan bod
     auto headId = atomTuple(head);
     auto bodyId = weightLitTuple(body);
     printStepFact("rule", Head{ht, headId}, Sum{bodyId, bound});
-    if (calculateSCCs_) {
-        calculateSCCs(head, body);
+    if (calculateSccs_) {
+        calculateSccs(head, body);
     }
 }
 
 template <typename L>
-void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
+void Reifier::calculateSccs(AtomSpan head, std::span<const L> body) {
     for (const auto& atom : head) {
         auto uId = addNode(atom);
         for (const auto& elem : body) {
@@ -189,63 +185,45 @@ void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
     }
 }
 
-void Reifier::minimize(Weight_t prio, WeightLitSpan lits) {
-    printStepFact("minimize", prio, weightLitTuple(lits));
-}
+void Reifier::minimize(Weight_t prio, WeightLitSpan lits) { printStepFact("minimize", prio, weightLitTuple(lits)); }
 
 void Reifier::project(AtomSpan atoms) {
-    for (const auto& x : atoms) {
-        printStepFact("project", x);
-    }
+    for (const auto& x : atoms) { printStepFact("project", x); }
 }
 
-void Reifier::outputAtom(Atom_t atom, std::string_view name) {
-    printStepFact("outputAtom", name, atom);
-}
+void Reifier::outputAtom(Atom_t atom, std::string_view name) { printStepFact("outputAtom", name, atom); }
 
-void Reifier::outputTerm(Id_t termId, std::string_view name) {
-    printStepFact("outputTerm", name, termId);
-}
+void Reifier::outputTerm(Id_t termId, std::string_view name) { printStepFact("outputTerm", name, termId); }
 
-void Reifier::output(Id_t termId, LitSpan condition) {
-    printStepFact("output", termId, litTuple(condition));
-}
+void Reifier::output(Id_t termId, LitSpan condition) { printStepFact("output", termId, litTuple(condition)); }
 
-void Reifier::external(Atom_t a, TruthValue v) {
-    printStepFact("external", a, enum_name(v));
-}
+void Reifier::external(Atom_t a, TruthValue v) { printStepFact("external", a, enum_name(v)); }
 
 void Reifier::assume(LitSpan lits) {
-    for (const auto& x : lits) {
-        printStepFact("assume", x);
-    }
+    for (const auto& x : lits) { printStepFact("assume", x); }
 }
 
 void Reifier::heuristic(Atom_t a, DomModifier t, int bias, unsigned prio, LitSpan condition) {
     printStepFact("heuristic", a, enum_name(t), bias, prio, litTuple(condition));
 }
 
-void Reifier::acycEdge(int s, int t, LitSpan condition) {
-    printStepFact("edge", s, t, litTuple(condition));
-}
+void Reifier::acycEdge(int s, int t, LitSpan condition) { printStepFact("edge", s, t, litTuple(condition)); }
 
-void Reifier::theoryTerm(Id_t termId, int number) {
-    printStepFact("theory_number", termId, number);
-}
+void Reifier::theoryTerm(Id_t termId, int number) { printStepFact("theory_number", termId, number); }
 
-void Reifier::theoryTerm(Id_t termId, std::string_view name) {
-    printStepFact("theory_string", termId, Quoted{name});
-}
+void Reifier::theoryTerm(Id_t termId, std::string_view name) { printStepFact("theory_string", termId, Quoted{name}); }
 
 void Reifier::theoryTerm(Id_t termId, int cId, IdSpan args) {
     if (cId >= 0) {
         printStepFact("theory_function", termId, cId, theoryTuple(args));
-    } else {
+    }
+    else {
         const char* type = "";
         switch (cId) {
             case -1: type = "tuple"; break;
-            case -2: type = "set";   break;
-            case -3: type = "list";  break;
+            case -2: type = "set"; break;
+            case -3: type = "list"; break;
+            default: POTASSCO_ASSERT_NOT_REACHED("unexpected tuple type");
         }
         printStepFact("theory_sequence", termId, type, theoryTuple(args));
     }
@@ -266,11 +244,8 @@ void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op,
 }
 
 void Reifier::endStep() {
-    size_t i = 0;
-    for (const auto& scc : stepData_->graph.computeNonTrivialSccs()) {
-        for (auto it = scc.rbegin(); it != scc.rend(); ++it) {
-            printStepFact("scc", i, *it);
-        }
+    for (size_t i = 0; const auto& scc : stepData_->graph.computeNonTrivialSccs()) {
+        for (auto it = scc.rbegin(); it != scc.rend(); ++it) { printStepFact("scc", i, *it); }
         ++i;
     }
     if (reifyStep_) {

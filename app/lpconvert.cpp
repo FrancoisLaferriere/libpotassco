@@ -93,7 +93,7 @@ private:
     Format                     format_{Format::auto_};
     bool                       potassco_ = false;
     bool                       filter_   = false;
-    Potassco::Reifier::Options reifyOpts;
+    Potassco::Reifier::Options reifyOpts_;
 };
 
 POTASSCO_SET_ENUM_ENTRIES(LpConvert::Format, {auto_, "auto"sv}, {text, "text"sv}, {smodels, "smodels"sv},
@@ -110,8 +110,8 @@ void LpConvert::initOptions(OptionContext& root) {
         ("-t,text", flag([this](bool) { format_ = Format::text; }), "Convert to ground text format")             //
         ("-r,reify", flag([this](bool) { format_ = Format::reify; }), "Convert program to reified facts")        //
         ("aux-pred", storeTo(pred_, std::string()), "Prefix/Predicate for atom numbers in text output")          //
-        ("-reify-sccs", flag(reifyOpts.calculateSCCs, false), "Calculate SCCs for reified output")               //
-        ("-reify-steps", flag(reifyOpts.reifyStep, false), "Add step numbers to reified output")                 //
+        ("-reify-sccs", flag(reifyOpts_.calculateSccs, false), "Calculate SCCs for reified output")              //
+        ("-reify-steps", flag(reifyOpts_.reifyStep, false), "Add step numbers to reified output")                //
         ;
     root.add(std::move(convert));
 }
@@ -166,7 +166,7 @@ void LpConvert::run() try {
         case Format::aspif_v1: out1 = std::make_unique<Potassco::AspifOutput>(os, 1); break;
         case Format::auto_   : [[fallthrough]];
         case Format::aspif   : out1 = std::make_unique<Potassco::AspifOutput>(os, 2); break;
-        case Format::reify   : out1 = std::make_unique<Potassco::Reifier>(os, reifyOpts); break;
+        case Format::reify   : out1 = std::make_unique<Potassco::Reifier>(os, reifyOpts_); break;
     }
     in.peek() == 'a' ? Potassco::readAspif(in, *out1) : Potassco::readSmodels(in, *out1, opts);
 }
