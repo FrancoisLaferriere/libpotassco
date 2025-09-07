@@ -26,13 +26,87 @@
 #include <potassco/error.h>
 #include <potassco/graph.h>
 #include <potassco/reify.h>
-#include <potassco/reify_utils.h>
 
 #include <algorithm>
 #include <ostream>
 #include <unordered_map>
 
 namespace Potassco {
+namespace {
+/////////////////////////////////////////////////////////////////////////////////////////
+// Helpers
+/////////////////////////////////////////////////////////////////////////////////////////
+struct Head {
+    HeadType type;
+    size_t   id;
+};
+
+struct Normal {
+    size_t id;
+};
+
+struct Sum {
+    size_t   id;
+    Weight_t bound;
+};
+
+struct Quoted {
+    std::string_view str;
+};
+
+template <typename T>
+void printValue(std::ostream& out, const T& value) {
+    out << value;
+}
+
+void printValue(std::ostream& out, const WeightLit& value) {
+    printValue(out, value.lit);
+    out << ",";
+    printValue(out, value.weight);
+}
+
+void printValue(std::ostream& out, const Head& h) {
+    const char* name = (h.type == HeadType::disjunctive ? "disjunction" : "choice");
+    out << name << "(" << h.id << ")";
+}
+
+void printValue(std::ostream& out, const Normal& n) { out << "normal(" << n.id << ")"; }
+
+void printValue(std::ostream& out, const Sum& s) { out << "sum(" << s.id << "," << s.bound << ")"; }
+
+void printValue(std::ostream& out, const Quoted& q) {
+    out.put('"');
+    for (auto c : q.str) {
+        switch (c) {
+            case '\n': out << "\\n"; break;
+            case '\\': out << "\\\\"; break;
+            case '"' : out << "\\\""; break;
+            default  : out.put(c); break;
+        }
+    }
+    out.put('"');
+}
+
+template <typename T, typename... V>
+void printCommaSeparated(std::ostream& out, const T& t, const V&... v) {
+    printValue(out, t);
+    ((out << ",", printValue(out, v)), ...);
+}
+template <typename T>
+struct VectorHash {
+    size_t operator()(const std::vector<T>& vec) const {
+        static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+        auto* data = reinterpret_cast<const char*>(vec.data());
+        return std::hash<std::string_view>{}({data, vec.size() * sizeof(T)});
+    }
+};
+
+template <typename T>
+std::vector<T> toVec(std::span<const T> span) {
+    return {span.begin(), span.end()};
+}
+
+}// end unamed namespace
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Reifier

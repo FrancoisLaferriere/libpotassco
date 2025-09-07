@@ -22,7 +22,6 @@ set(header
     ${header_path}/match_basic_types.h
     ${header_path}/platform.h
     ${header_path}/reify.h
-    ${header_path}/reify_utils.h
     ${header_path}/rule_utils.h
     ${header_path}/smodels.h
     ${header_path}/theory_data.h)
