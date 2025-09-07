@@ -26,8 +26,6 @@
 
 #include <cstdint>
 #include <potassco/aspif.h>
-#include <potassco/graph.h>
-#include <potassco/reify_utils.h>
 
 #include <unordered_map>
 #include <vector>
@@ -133,22 +131,15 @@ private:
     auto addNode(Atom_t atom) -> uint32_t;
 
 private:
-    using Graph = Potassco::Graph<Atom_t>;
-    using WLVec = std::vector<std::pair<Lit_t, Weight_t>>;
     //! Stores step-specific tuples and graph nodes.
-    struct StepData {
-        std::unordered_map<std::vector<Id_t>, size_t, Hash<std::vector<Id_t>>> theoryTuples;
-        std::unordered_map<std::vector<Id_t>, size_t, Hash<std::vector<Id_t>>> theoryElementTuples;
-        std::unordered_map<std::vector<Lit_t>, size_t, Hash<std::vector<Lit_t>>> litTuples;
-        std::unordered_map<std::vector<Atom_t>, size_t, Hash<std::vector<Atom_t>>> atomTuples;
-        std::unordered_map<WLVec, size_t, Hash<WLVec>> weightLitTuples;
-        Graph graph_;
-        std::unordered_map<Atom_t, uint32_t> nodes_;
-    } stepData_;
+    struct StepData;
+    using StepDataPtr = std::unique_ptr<StepData>;
+
     std::ostream& out_;
-    size_t step_ = 0;
-    bool calculateSCCs_;
-    bool reifyStep_;
+    bool          calculateSCCs_;
+    bool          reifyStep_;
+    StepDataPtr   stepData_;
+    size_t        step_ = 0;
 };
 
 } // namespace Potassco

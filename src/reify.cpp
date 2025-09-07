@@ -23,7 +23,9 @@
 // }}}
 
 #include <potassco/enum.h>
+#include <potassco/graph.h>
 #include <potassco/reify.h>
+#include <potassco/reify_utils.h>
 
 #include <algorithm>
 #include <cassert>
@@ -35,8 +37,32 @@ namespace Potassco {
 /////////////////////////////////////////////////////////////////////////////////////////
 // Reifier
 /////////////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+using SeqMap = std::unordered_map<std::vector<T>, size_t, VectorHash<T>>;
+
+struct Reifier::StepData {
+    SeqMap<Id_t>      theoryTuples;
+    SeqMap<Id_t>      theoryElementTuples;
+    SeqMap<Lit_t>     litTuples;
+    SeqMap<Atom_t>    atomTuples;
+    SeqMap<WeightLit> weightLitTuples;
+
+    Graph<Atom_t> graph;
+    std::unordered_map<Atom_t, uint32_t> nodes;
+
+    void clear() {
+        theoryTuples.clear();
+        theoryElementTuples.clear();
+        litTuples.clear();
+        atomTuples.clear();
+        weightLitTuples.clear();
+        graph.clear();
+        nodes.clear();
+    }
+};
+
 Reifier::Reifier(std::ostream& out, const Options& opts)
-    : out_(out), calculateSCCs_(opts.calculateSCCs), reifyStep_(opts.reifyStep) {}
+    : out_(out), calculateSCCs_(opts.calculateSCCs), reifyStep_(opts.reifyStep), stepData_(std::make_unique<StepData>()){}
 
 Reifier::~Reifier() noexcept = default;
 
@@ -94,37 +120,32 @@ auto Reifier::orderedTuple(M& map, const char* name, std::vector<T>&& args) -> s
 }
 
 auto Reifier::theoryTuple(IdSpan args) -> size_t {
-    return orderedTuple(stepData_.theoryTuples, "theory_tuple", args);
+    return orderedTuple(stepData_->theoryTuples, "theory_tuple", args);
 }
 
 auto Reifier::theoryElementTuple(IdSpan args) -> size_t {
-    return tuple(stepData_.theoryElementTuples, "theory_element_tuple", args);
+    return tuple(stepData_->theoryElementTuples, "theory_element_tuple", args);
 }
 
 auto Reifier::litTuple(LitSpan args) -> size_t {
-    return tuple(stepData_.litTuples, "literal_tuple", args);
+    return tuple(stepData_->litTuples, "literal_tuple", args);
 }
 
 auto Reifier::weightLitTuple(WeightLitSpan args) -> size_t {
-    WLVec lits;
-    lits.reserve(args.size());
-    for (const auto& x : args) {
-        lits.emplace_back(x.lit, x.weight);
-    }
-    return tuple(stepData_.weightLitTuples, "weighted_literal_tuple", std::move(lits));
+    return tuple(stepData_->weightLitTuples, "weighted_literal_tuple", args);
 }
 
 auto Reifier::atomTuple(AtomSpan args) -> size_t {
-    return tuple(stepData_.atomTuples, "atom_tuple", args);
+    return tuple(stepData_->atomTuples, "atom_tuple", args);
 }
 
 auto Reifier::addNode(Atom_t atom) -> uint32_t {
-    auto& nodesMap = stepData_.nodes_;
+    auto& nodesMap = stepData_->nodes;
     auto it = nodesMap.find(atom);
     if (it != nodesMap.end()) {
         return it->second;
     }
-    auto nodeId = stepData_.graph_.addNode(atom);
+    auto nodeId = stepData_->graph.addNode(atom);
     nodesMap[atom] = nodeId;
     return nodeId;
 }
@@ -162,7 +183,7 @@ void Reifier::calculateSCCs(AtomSpan head, std::span<const L> body) {
         for (const auto& elem : body) {
             if (lit(elem) > 0) {
                 auto vId = addNode(static_cast<Atom_t>(lit(elem)));
-                stepData_.graph_.addEdge(uId, vId);
+                stepData_->graph.addEdge(uId, vId);
             }
         }
     }
@@ -246,14 +267,14 @@ void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op,
 
 void Reifier::endStep() {
     size_t i = 0;
-    for (const auto& scc : stepData_.graph_.computeNonTrivialSccs()) {
+    for (const auto& scc : stepData_->graph.computeNonTrivialSccs()) {
         for (auto it = scc.rbegin(); it != scc.rend(); ++it) {
             printStepFact("scc", i, *it);
         }
         ++i;
     }
     if (reifyStep_) {
-        stepData_ = StepData();
+        stepData_->clear();
         ++step_;
     }
 }

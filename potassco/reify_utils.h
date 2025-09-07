@@ -22,7 +22,6 @@
 
 // }}}
 
-
 #pragma once
 
 #include <potassco/basic_types.h>
@@ -50,11 +49,10 @@ struct Quoted {
 template <typename T>
 void printValue(std::ostream& out, const T& value) { out << value; }
 
-template <typename T, typename U>
-void printValue(std::ostream& out, const std::pair<T, U>& value) {
-    printValue(out, value.first);
+inline void printValue(std::ostream& out, const WeightLit& value) {
+    printValue(out, value.lit);
     out << ",";
-    printValue(out, value.second);
+    printValue(out, value.weight);
 }
 
 inline void printValue(std::ostream& out, const Head& h) {
@@ -84,27 +82,12 @@ void printComma(std::ostream& out, const T& t, const V&... v) {
     printValue(out, t);
     ((out << ",", printValue(out, v)), ...);
 }
-
 template <typename T>
-struct Hash : std::hash<T> {};
-
-template <typename T, typename U>
-struct Hash<std::pair<T, U>> {
-    size_t operator()(const std::pair<T, U>& p) const noexcept {
-        size_t hash = std::hash<T>()(p.first);
-        hash ^= Hash<U>()(p.second) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        return hash;
-    }
-};
-
-template <typename T>
-struct Hash<std::vector<T>> {
-    size_t operator()(const std::vector<T>& vec) const noexcept {
-        size_t hash = vec.size();
-        for (auto& x : vec) {
-            hash ^= Hash<typename std::vector<T>::value_type>()(x) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
-        }
-        return hash;
+struct VectorHash {
+    size_t operator()(const std::vector<T>& vec) const {
+        static_assert(std::is_trivially_copyable_v<T>, "T must be trivially copyable");
+        auto* data = reinterpret_cast<const char*>(vec.data());
+        return std::hash<std::string_view>{}({data, vec.size() * sizeof(T)});
     }
 };
 
