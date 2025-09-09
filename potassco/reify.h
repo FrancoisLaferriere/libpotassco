@@ -27,7 +27,6 @@
 #include <potassco/aspif.h>
 
 #include <cstdint>
-#include <vector>
 
 namespace Potassco {
 //! Writes a program in reified facts format to the given output stream.
@@ -108,14 +107,7 @@ private:
     void printStepFact(const char* name, const T&... args);
     //! Insert a tuple into a map and print a fact if it was not already present.
     template <typename M, typename T>
-    auto tuple(M& map, const char* name, const T& args) -> size_t;
-    template <typename M, typename T>
-    auto tuple(M& map, const char* name, std::vector<T>&& args) -> size_t;
-    //! Insert a ordered tuple into a map and print a fact if it was not already present.
-    template <typename M, typename T>
-    auto orderedTuple(M& map, const char* name, const T& args) -> size_t;
-    template <typename M, typename T>
-    auto orderedTuple(M& map, const char* name, std::vector<T>&& args) -> size_t;
+    auto tuple(M& map, const char* name, std::span<T> args) -> size_t;
     //! Insert a theory tuple and return its ID.
     auto theoryTuple(IdSpan args) -> size_t;
     //! Insert a literal tuple and return its ID.

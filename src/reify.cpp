@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <ostream>
 #include <unordered_map>
+#include <vector>
 
 namespace Potassco {
 namespace {
@@ -106,7 +107,7 @@ std::vector<T> toVec(std::span<const T> span) {
     return {span.begin(), span.end()};
 }
 
-}// end unamed namespace
+} // end unnamed namespace
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // Reifier
@@ -161,14 +162,10 @@ void Reifier::printStepFact(const char* name, const T&... args) {
 }
 
 template <typename M, typename T>
-auto Reifier::tuple(M& map, const char* name, const T& args) -> size_t {
-    return tuple(map, name, toVec(args));
-}
-
-template <typename M, typename T>
-auto Reifier::tuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
-    std::sort(args.begin(), args.end());
-    auto [it, inserted] = map.emplace(std::move(args), map.size());
+auto Reifier::tuple(M& map, const char* name, std::span<T> args) -> size_t {
+    auto owned = toVec(args);
+    std::ranges::sort(owned);
+    auto [it, inserted] = map.emplace(std::move(owned), map.size());
     if (inserted) {
         printStepFact(name, it->second);
         for (const auto& x : it->first) { printStepFact(name, it->second, x); }
@@ -176,26 +173,20 @@ auto Reifier::tuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
     return it->second;
 }
 
-template <typename M, typename T>
-auto Reifier::orderedTuple(M& map, const char* name, const T& args) -> size_t {
-    return orderedTuple(map, name, toVec(args));
-}
-
-template <typename M, typename T>
-auto Reifier::orderedTuple(M& map, const char* name, std::vector<T>&& args) -> size_t {
-    auto [it, inserted] = map.emplace(std::move(args), map.size());
+auto Reifier::theoryTuple(IdSpan args) -> size_t {
+    auto& map           = stepData_->theoryTuples;
+    auto  owned         = toVec(args);
+    auto [it, inserted] = map.emplace(std::move(owned), map.size());
     if (inserted) {
-        printStepFact(name, it->second);
+        printStepFact("theory_tuple", it->second);
         int arg = 0;
         for (const auto& x : it->first) {
-            printStepFact(name, it->second, arg, x);
+            printStepFact("theory_tuple", it->second, arg, x);
             ++arg;
         }
     }
     return it->second;
 }
-
-auto Reifier::theoryTuple(IdSpan args) -> size_t { return orderedTuple(stepData_->theoryTuples, "theory_tuple", args); }
 
 auto Reifier::theoryElementTuple(IdSpan args) -> size_t {
     return tuple(stepData_->theoryElementTuples, "theory_element_tuple", args);
