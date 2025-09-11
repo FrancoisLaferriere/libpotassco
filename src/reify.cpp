@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <ostream>
+#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -165,8 +166,8 @@ template <typename M, typename T>
 auto Reifier::tuple(M& map, const char* name, std::span<T> args) -> size_t {
     auto owned = toVec(args);
     std::ranges::sort(owned);
-    auto [it, inserted] = map.emplace(std::move(owned), map.size());
-    if (inserted) {
+    auto [it, isNew] = map.emplace(std::move(owned), map.size());
+    if (isNew) {
         printStepFact(name, it->second);
         for (const auto& x : it->first) { printStepFact(name, it->second, x); }
     }
@@ -174,10 +175,10 @@ auto Reifier::tuple(M& map, const char* name, std::span<T> args) -> size_t {
 }
 
 auto Reifier::theoryTuple(IdSpan args) -> size_t {
-    auto& map           = stepData_->theoryTuples;
-    auto  owned         = toVec(args);
-    auto [it, inserted] = map.emplace(std::move(owned), map.size());
-    if (inserted) {
+    auto& map        = stepData_->theoryTuples;
+    auto  owned      = toVec(args);
+    auto [it, isNew] = map.emplace(std::move(owned), map.size());
+    if (isNew) {
         printStepFact("theory_tuple", it->second);
         int arg = 0;
         for (const auto& x : it->first) {
@@ -201,14 +202,11 @@ auto Reifier::weightLitTuple(WeightLitSpan args) -> size_t {
 auto Reifier::atomTuple(AtomSpan args) -> size_t { return tuple(stepData_->atomTuples, "atom_tuple", args); }
 
 auto Reifier::addNode(Atom_t atom) -> uint32_t {
-    auto& nodesMap = stepData_->nodes;
-    auto  it       = nodesMap.find(atom);
-    if (it != nodesMap.end()) {
-        return it->second;
+    auto [it, isNew] = stepData_->nodes.try_emplace(atom, 0);
+    if (isNew) {
+        it->second = stepData_->graph.addNode(atom);
     }
-    auto nodeId    = stepData_->graph.addNode(atom);
-    nodesMap[atom] = nodeId;
-    return nodeId;
+    return it->second;
 }
 
 void Reifier::initProgram(bool incremental) {
@@ -243,7 +241,7 @@ void Reifier::calculateSccs(AtomSpan head, std::span<const L> body) {
         auto uId = addNode(atom);
         for (const auto& elem : body) {
             if (lit(elem) > 0) {
-                auto vId = addNode(static_cast<Atom_t>(lit(elem)));
+                auto vId = addNode(Potassco::atom(elem));
                 stepData_->graph.addEdge(uId, vId);
             }
         }
@@ -310,7 +308,7 @@ void Reifier::theoryAtom(Id_t atomOrZero, Id_t termId, IdSpan elements, Id_t op,
 
 void Reifier::endStep() {
     for (size_t i = 0; const auto& scc : stepData_->graph.computeNonTrivialSccs()) {
-        for (auto it = scc.rbegin(); it != scc.rend(); ++it) { printStepFact("scc", i, *it); }
+        for (auto x : std::views::reverse(scc)) { printStepFact("scc", i, x); }
         ++i;
     }
     if (reifyStep_) {
