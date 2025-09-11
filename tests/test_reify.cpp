@@ -22,17 +22,25 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //
-#include <catch2/catch_test_macros.hpp>
 #include <potassco/aspif_text.h>
 #include <potassco/graph.h>
 #include <potassco/reify.h>
 
+#include <catch2/catch_test_macros.hpp>
+
 #include <sstream>
 
 namespace Potassco::Test::Reify {
-static bool read(std::stringstream& in, std::stringstream& out, bool scc = false, bool step = false) {
+
+static bool readText(std::stringstream& in, std::stringstream& out, bool scc = false, bool step = false) {
     Reifier        prg(out, {scc, step});
     AspifTextInput parser(&prg);
+    return readProgram(in, parser) == 0;
+}
+
+static bool readAspif(std::stringstream& in, std::stringstream& out, bool scc = false, bool step = false) {
+    Reifier    prg(out, {scc, step});
+    AspifInput parser(prg);
     return readProgram(in, parser) == 0;
 }
 
@@ -40,17 +48,17 @@ TEST_CASE("Test Reifier", "[reify]") {
     std::stringstream input, output;
 
     SECTION("empty") {
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "");
     }
     SECTION("incremental") {
         input << "#incremental.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "tag(incremental).\n");
     }
     SECTION("normal") {
         input << "a:-b.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "atom_tuple(0).\natom_tuple(0,1).\nliteral_tuple(0).\nliteral_tuple(0,2).\nrule("
                                 "disjunction(0),normal(0)).\n");
     }
@@ -70,12 +78,12 @@ TEST_CASE("Test Reifier", "[reify]") {
                       "literal_tuple(0,1).\n"
                       "literal_tuple(0,2,1).\n"
                       "rule(disjunction(0),normal(0),1).\n";
-        REQUIRE(read(input, output, false, true));
+        REQUIRE(readText(input, output, false, true));
         REQUIRE(output.str() == result);
     }
     SECTION("cycle") {
-        input << "a:-b."
-              << "b:-a.";
+        input << "a:-b.";
+        input << "b:-a.";
         auto result = "atom_tuple(0).\n"
                       "atom_tuple(0,1).\n"
                       "literal_tuple(0).\n"
@@ -88,77 +96,130 @@ TEST_CASE("Test Reifier", "[reify]") {
                       "rule(disjunction(1),normal(1)).\n"
                       "scc(0,1).\n"
                       "scc(0,2).\n";
-        REQUIRE(read(input, output, true));
+        REQUIRE(readText(input, output, true));
         REQUIRE(output.str() == result);
     }
     SECTION("choice") {
         input << "{a, b}.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() ==
                 "atom_tuple(0).\natom_tuple(0,1).\natom_tuple(0,2).\nliteral_tuple(0).\nrule(choice(0),normal(0)).\n");
     }
     SECTION("sum") {
         input << ":-1 {a, b}.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "atom_tuple(0).\nweighted_literal_tuple(0).\nweighted_literal_tuple(0,1,1).\nweighted_"
                                 "literal_tuple(0,2,1).\nrule(disjunction(0),sum(0,1)).\n");
     }
     SECTION("minimize") {
         input << "#minimize {a=10, b=20}.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "weighted_literal_tuple(0).\nweighted_literal_tuple(0,1,10).\nweighted_literal_tuple(0,"
                                 "2,20).\nminimize(0,0).\n");
     }
     SECTION("project") {
         input << "#project {a}.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "project(1).\n");
     }
     SECTION("output") {
         input << "#output a:b,c.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() ==
                 "outputTerm(a,0).\nliteral_tuple(0).\nliteral_tuple(0,2).\nliteral_tuple(0,3).\noutput(0,0).\n");
     }
     SECTION("external") {
         input << "#external a.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "external(1,false).\n");
     }
     SECTION("assume") {
         input << "#assume {a}.";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "assume(1).\n");
     }
     SECTION("heuristic") {
         input << "#heuristic a. [1, level]";
         input << "#heuristic b : c. [2@1, true]";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() == "literal_tuple(0).\nheuristic(1,level,1,0,0).\nliteral_tuple(1).\nliteral_tuple(1,3)."
                                 "\nheuristic(2,true,2,1,1).\n");
     }
     SECTION("edge") {
         input << "#edge (1,2) : a.";
         input << "#edge (2,1).";
-        REQUIRE(read(input, output));
+        REQUIRE(readText(input, output));
         REQUIRE(output.str() ==
                 "literal_tuple(0).\nliteral_tuple(0,1).\nedge(1,2,0).\nliteral_tuple(1).\nedge(2,1,1).\n");
     }
+    SECTION("unique tuples") {
+        input << " {a; b}.";
+        input << " {a; b}.";
+        REQUIRE(readText(input, output));
+        REQUIRE(output.str() == "atom_tuple(0).\natom_tuple(0,1).\natom_tuple(0,2).\nliteral_tuple(0).\nrule(choice(0),"
+                                "normal(0)).\nrule(choice(0),normal(0)).\n");
+    }
+    SECTION("sorted tuples") {
+        input << " {a; b}.";
+        input << " {b; a}.";
+        REQUIRE(readText(input, output));
+        REQUIRE(output.str() == "atom_tuple(0).\natom_tuple(0,1).\natom_tuple(0,2).\nliteral_tuple(0).\nrule(choice(0),"
+                                "normal(0)).\nrule(choice(0),normal(0)).\n");
+    }
+
+    input << "asp 1 0 0\n";
+
+    SECTION("theory terms") {
+        input << "9 0 6 42\n";
+        input << "9 1 0 6 banana\n";
+        input << "9 2 14 4 2 12 13\n";
+        input << "0";
+        REQUIRE(readAspif(input, output));
+        REQUIRE(output.str() == "theory_number(6,42).\ntheory_string(0,\"banana\").\ntheory_tuple(0).\ntheory_tuple(0,"
+                                "0,12).\ntheory_tuple(0,1,13).\ntheory_function(14,4,0).\n");
+    }
+    SECTION("theory atoms") {
+        input << "9 4 0 1 10 0\n";
+        input << "9 5 6 0 1 1\n";
+        input << "9 6 6 0 1 1 2 3\n";
+        input << "0";
+        REQUIRE(readAspif(input, output));
+        REQUIRE(output.str() ==
+                "theory_tuple(0).\ntheory_tuple(0,0,10).\nliteral_tuple(0).\ntheory_element(0,0,0).\ntheory_element_"
+                "tuple(0).\ntheory_element_tuple(0,1).\ntheory_atom(6,0,0).\ntheory_atom(6,0,0,2,3).\n");
+    }
+    SECTION("theory unique tuples") {
+        input << "9 2 14 4 2 12 13\n";
+        input << "9 2 37 9 2 12 13\n";
+        input << "0";
+        REQUIRE(readAspif(input, output));
+        REQUIRE(output.str() == "theory_tuple(0).\ntheory_tuple(0,0,12).\ntheory_tuple(0,1,13).\ntheory_function(14,4,"
+                                "0).\ntheory_function(37,9,0).\n");
+    }
+    SECTION("theory quoting") {
+        input << "9 1 0 6 hell\"o\n";
+        input << "9 1 1 6 gre\\at\n";
+        input << "9 1 2 6 worl\nd\n";
+        input << "0";
+        REQUIRE(readAspif(input, output));
+        REQUIRE(output.str() ==
+                "theory_string(0,\"hell\\\"o\").\ntheory_string(1,\"gre\\\\at\").\ntheory_string(2,\"worl\\nd\").\n");
+    }
 }
 
-inline std::string toString(const Graph<uint32_t>::SccVec& sccs) {
+static std::string toString(const Graph<uint32_t>::SccVec& sccs) {
     std::ostringstream out;
     out << "[";
-    std::string SccVecSeparator;
+    std::string sccVecSeparator;
     for (const auto& scc : sccs) {
-        out << SccVecSeparator << "[";
-        std::string SccSeparator;
+        out << sccVecSeparator << "[";
+        std::string sccSeparator;
         for (auto id : scc) {
-            out << SccSeparator << static_cast<char>('a' + id);
-            SccSeparator = ",";
+            out << sccSeparator << static_cast<char>('a' + id);
+            sccSeparator = ",";
         }
         out << "]";
-        SccVecSeparator = ",";
+        sccVecSeparator = ",";
     }
     out << "]";
     return out.str();
@@ -166,19 +227,14 @@ inline std::string toString(const Graph<uint32_t>::SccVec& sccs) {
 
 TEST_CASE("Test Graph", "[reify]") {
     Graph<uint32_t> g;
-    SECTION("empty graph") {
-        g.clear();
-        REQUIRE(g.computeSccs().empty());
-    }
+    SECTION("empty graph") { REQUIRE(g.computeSccs().empty()); }
     SECTION("single node") {
-        g.clear();
         g.addNode(0);
         auto sccs = g.computeSccs();
         REQUIRE(sccs.size() == 1);
         REQUIRE(toString(sccs) == "[[a]]");
     }
     SECTION("acyclic graph") {
-        g.clear();
         auto idA = g.addNode(0); // a
         auto idB = g.addNode(1); // b
         auto idC = g.addNode(2); // c
@@ -193,7 +249,6 @@ TEST_CASE("Test Graph", "[reify]") {
         REQUIRE(g.computeNonTrivialSccs().empty());
     }
     SECTION("single cycle") {
-        g.clear();
         auto idA = g.addNode(0);
         auto idB = g.addNode(1);
         auto idC = g.addNode(2);
@@ -208,7 +263,6 @@ TEST_CASE("Test Graph", "[reify]") {
         REQUIRE(toString(sccs) == "[[c,b,a],[d]]");
     }
     SECTION("multiple cycles") {
-        g.clear();
         auto idA = g.addNode(0);
         auto idB = g.addNode(1);
         auto idC = g.addNode(2);
@@ -233,7 +287,6 @@ TEST_CASE("Test Graph", "[reify]") {
         REQUIRE(toString(g.computeSccs()) == "[[h],[i],[c],[e,b,f,d,g,a]]");
     }
     SECTION("graph intact after computeSccs") {
-        g.clear();
         auto idA = g.addNode(0);
         auto idB = g.addNode(1);
         auto idC = g.addNode(2);
@@ -263,4 +316,5 @@ TEST_CASE("Test Graph", "[reify]") {
         REQUIRE(toString(g.computeSccs()) == expected);
     }
 }
+
 } // namespace Potassco::Test::Reify
